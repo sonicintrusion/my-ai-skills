@@ -20,6 +20,7 @@ Follow the rules defined in `markdownlint`’s official rules reference:
 - Avoid **bare URLs**; use `<https://…>` or `[text](https://…)` (MD034).
 - End every file with **a single newline** (MD047).
 - Start files with a top-level heading when appropriate (MD041/MD002).
+- Do **not** use a standalone line that is **only** bold or italic as a section title; use a real heading (`#` … `######`) instead (MD036 / `no-emphasis-as-header`).
 - Use fenced code blocks with a language when applicable (MD031/MD040).
 
 ## When fixing existing markdown
