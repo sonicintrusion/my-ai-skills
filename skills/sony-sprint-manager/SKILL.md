@@ -114,6 +114,7 @@ When the user asks to generate markdown files for each ticket assigned to them i
 
 - Jira status:
 - Assignee:
+- Jira: [<ISSUE_KEY>](https://jira.sie.sony.com/browse/<ISSUE_KEY>)
 
 ## Description
 
