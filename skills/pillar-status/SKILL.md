@@ -41,6 +41,7 @@ Call `confluence_get_page` with `id: <confluence_page_id>` and `includeBody: tru
 Extract the list of epic keys currently referenced on the Confluence page (same parsing logic as `pillar-sync`).
 
 Build two sets:
+
 - **Active epics**: keys present on Confluence page AND in local workspace
 - **Removed epics**: keys in local workspace but NO LONGER on Confluence page
 

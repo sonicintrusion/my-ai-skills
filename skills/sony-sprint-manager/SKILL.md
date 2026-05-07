@@ -127,6 +127,10 @@ When the user asks to generate markdown files for each ticket assigned to them i
 ## Notes / Updates
 
 -
+
+## Investigation
+
+-
 ```
 
 ## Markdown output quality
