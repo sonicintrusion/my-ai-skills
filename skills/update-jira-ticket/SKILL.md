@@ -34,7 +34,21 @@ If no message is found after the colon, ask the user: "What comment should I add
 
 Call `jira_add_issue_comment` with:
 - `key`: the resolved ticket key (e.g. `DSOSYS-2965`).
-- `comment`: the extracted message text.
+- `comment`: the extracted message text, formatted using Jira wiki markup (see below).
+
+**Jira wiki markup rules for comments:**
+
+- Bold: `*text*`
+- Italic: `_text_`
+- Inline code: `{{text}}`
+- Code block: `{code}...{code}`
+- Link: `[text|https://url]` or `[https://url]`
+- Bullet list: `* item` (one `*` per indent level)
+- Numbered list: `# item`
+- Heading: `h2. Title`
+- Horizontal rule: `----`
+- Do **not** use markdown syntax (`**`, `##`, backticks, `[text](url)`) — Jira renders it as raw text.
+- Plain prose with no special formatting needs no markup at all.
 
 If the call fails with a network/auth error:
 - Ask the user to confirm they are connected to VPN.

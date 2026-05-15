@@ -51,12 +51,26 @@ If the user provides no content (invokes the skill with no arguments), ask: "Wha
 1. Derive the Jira issue key from the BAU ticket filename (e.g. `DSOSYS-2886.md` → `DSOSYS-2886`).
 2. Call `jira_add_issue_comment` with:
    - `key`: the issue key derived above.
-   - `comment`: the update content provided by the user (plain text; no need to include the date, Jira timestamps the comment automatically).
+   - `comment`: the update content provided by the user, formatted using Jira wiki markup (see below).
 3. If the Jira MCP call fails with a network/auth error:
    - Ask the user to confirm they are connected to VPN.
    - Suggest reloading/restarting MCP servers after reconnecting.
    - Still complete the local markdown update even if Jira is unreachable.
 4. If Jira returns an error other than a network/auth issue, report it to the user but do not retry.
+
+**Jira wiki markup rules for comments:**
+
+- Bold: `*text*`
+- Italic: `_text_`
+- Inline code: `{{text}}`
+- Code block: `{code}...{code}`
+- Link: `[text|https://url]` or `[https://url]`
+- Bullet list: `* item` (one `*` per indent level)
+- Numbered list: `# item`
+- Heading: `h2. Title`
+- Horizontal rule: `----`
+- Do **not** use markdown syntax (`**`, `##`, backticks, `[text](url)`) — Jira renders it as raw text.
+- Plain prose with no special formatting needs no markup at all.
 
 ## Step 5: Confirm
 

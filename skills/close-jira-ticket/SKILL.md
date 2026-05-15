@@ -47,6 +47,7 @@ If no ticket ID can be found, ask: "Which Jira ticket should I close?"
 4. If `resolution` cannot be set during transition, call `jira_update_issue` afterwards with `fields: { "resolution": { "name": "Done" } }`.
 
 If the transition call fails with a network/auth error:
+
 - Ask the user to confirm they are connected to VPN.
 - Suggest reloading/restarting MCP servers after reconnecting.
 - Do not proceed with the markdown update until Jira succeeds.
@@ -56,8 +57,23 @@ If no `Done`/`Closed`/`Resolved` transition is found, list the available transit
 ## Step 4: Post a closing comment (optional)
 
 If the user provided a closing note in Step 1, call `jira_add_issue_comment` with:
+
 - `key`: the ticket key.
-- `comment`: the closing note text.
+- `comment`: the closing note text, formatted using Jira wiki markup (see below).
+
+**Jira wiki markup rules for comments:**
+
+- Bold: `*text*`
+- Italic: `_text_`
+- Inline code: `{{text}}`
+- Code block: `{code}...{code}`
+- Link: `[text|https://url]` or `[https://url]`
+- Bullet list: `* item` (one `*` per indent level)
+- Numbered list: `# item`
+- Heading: `h2. Title`
+- Horizontal rule: `----`
+- Do **not** use markdown syntax (`**`, `##`, backticks, `[text](url)`) — Jira renders it as raw text.
+- Plain prose with no special formatting needs no markup at all.
 
 ## Step 5: Update the local markdown file
 
