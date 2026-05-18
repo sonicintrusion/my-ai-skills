@@ -12,14 +12,13 @@ Skills that interact with external services (Jira, GitHub, Confluence, etc.) sho
 
 When a skill needs to access an external service, follow this priority order:
 
-1. **Check for API token** in environment variables
-2. **If token exists**: Use REST API (see service-specific guides below)
-3. **If no token**: Use MCP server tools
-4. **If MCP fails**: Suggest the user provide an API token or fix MCP configuration
+1. **Try MCP first** - Use MCP server tools if available
+2. **Fallback to REST API** - If MCP unavailable or fails, check for API token in environment variables
+3. **If both fail** - Suggest the user configure MCP servers or provide an API token
 
 ## Environment Variable Naming
 
-Service tokens should follow this pattern:
+API tokens are used as fallback when MCP is unavailable. Service tokens should follow this pattern:
 
 - Jira: `JIRA_TOKEN`
 - GitHub: `GITHUB_TOKEN`
@@ -31,6 +30,8 @@ Additional configuration variables:
 - `JIRA_BASE_URL` - Base URL for Jira instance (default: `https://jira.sie.sony.com`)
 - `CONFLUENCE_BASE_URL` - Base URL for Confluence instance (default: `https://confluence.sie.sony.com`)
 - `GITHUB_API_URL` - GitHub API URL (default: `https://github.sie.sony.com/api/v3`)
+
+**Note:** MCP is the primary access method. Tokens are only checked if MCP is unavailable.
 
 ## Checking for Tokens
 
@@ -54,42 +55,46 @@ See the following files for REST API implementation details:
 ### Step 1: Detect available access method
 
 ```markdown
-1. Check if `<SERVICE>_TOKEN` environment variable exists and is non-empty
-2. If yes, set `useRestApi = true`
-3. If no, set `useRestApi = false` (will use MCP)
+1. Try to use MCP server tools first
+2. If MCP unavailable or fails, check if `<SERVICE>_TOKEN` environment variable exists
+3. If token exists, set `useRestApi = true`
+4. If neither available, report error
 ```
 
 ### Step 2: Execute operation
 
 ```markdown
-**If using REST API:**
-- Get base URL from environment or use Sony default
+**Try MCP first:**
+- Call the appropriate MCP tool (e.g., `jira_add_issue_comment`)
+- Handle MCP-specific errors (VPN, authentication, etc.)
+- If successful, operation complete
+
+**If MCP fails or unavailable (REST API fallback):**
+- Check if token exists in environment
+- Get base URL from environment or use service default
   - Jira: `${JIRA_BASE_URL:-https://jira.sie.sony.com}`
   - GitHub: `${GITHUB_API_URL:-https://github.sie.sony.com/api/v3}`
   - Confluence: `${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com}`
 - Construct the appropriate REST API request (see service-specific guide)
 - Use `curl` via the Bash tool with appropriate headers
 - Parse the JSON response
-
-**If using MCP:**
-- Call the appropriate MCP tool (e.g., `jira_add_issue_comment`)
-- Handle MCP-specific errors (VPN, authentication, etc.)
 ```
 
 ### Step 3: Error handling
 
 ```markdown
-**REST API errors:**
+**MCP errors:**
+- Server unavailable: MCP server not running or not configured
+- Authentication required: Interactive sign-in needed
+- Network/connection: VPN may be required
+- If MCP fails, try REST API fallback
+
+**REST API errors (fallback):**
 - 401 Unauthorized: Token is invalid or expired
 - 403 Forbidden: Token lacks required permissions
 - 404 Not Found: Resource doesn't exist
 - 429 Too Many Requests: Rate limit exceeded
 - Network errors: Check connectivity
-
-**MCP errors:**
-- Server unavailable: MCP server not running or not configured
-- Authentication required: Interactive sign-in needed
-- Network/connection: VPN may be required
 ```
 
 ## Example Implementation
@@ -97,27 +102,30 @@ See the following files for REST API implementation details:
 ```markdown
 ## Step 2: Post the comment
 
+**Try MCP first:**
+
+Call `jira_add_issue_comment` with:
+- `key`: the ticket key
+- `comment`: the comment text
+
+If MCP succeeds, done. If MCP fails or unavailable, proceed to fallback.
+
+**If MCP fails or unavailable (REST API fallback):**
+
 1. Check if `JIRA_TOKEN` environment variable is set.
-
-**If JIRA_TOKEN is available (REST API path):**
-
-1. Get the token: `JIRA_TOKEN` from environment
-2. Get the base URL: `JIRA_BASE_URL` from environment (default: `https://jira.sie.sony.com`)
+2. If yes, get base URL: `JIRA_BASE_URL` from environment (default: `https://jira.sie.sony.com`)
 3. Make a REST API request:
    ```bash
-   curl -X POST "${JIRA_BASE_URL}/rest/api/2/issue/${ISSUE_KEY}/comment" \
+   curl -X POST "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISSUE_KEY}/comment" \
      -H "Authorization: Bearer ${JIRA_TOKEN}" \
      -H "Content-Type: application/json" \
      -d "{\"body\": \"${COMMENT_TEXT}\"}"
    ```
 4. Check response status code (200/201 = success)
 
-**If JIRA_TOKEN is not available (MCP path):**
+**If both fail:**
 
-1. Call `jira_add_issue_comment` with:
-   - `key`: the ticket key
-   - `comment`: the comment text
-2. Handle MCP-specific errors (VPN, authentication, etc.)
+Suggest VPN check, MCP restart, or verify REST API token.
 ```
 
 ## Adding New Services
