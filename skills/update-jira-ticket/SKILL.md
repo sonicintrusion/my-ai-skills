@@ -32,6 +32,24 @@ If no message is found after the colon, ask the user: "What comment should I add
 
 ## Step 2: Post the comment
 
+Check if `JIRA_TOKEN` environment variable is set.
+
+**If JIRA_TOKEN is available (REST API path):**
+
+1. Get the token: `JIRA_TOKEN` from environment
+2. Get the base URL: `JIRA_BASE_URL` from environment (default: `https://jira.sie.sony.com`)
+3. Make a REST API request (see `../api-fallback/jira-rest-api.md` for details):
+   ```bash
+   curl -X POST "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISSUE_KEY}/comment" \
+     -H "Authorization: Bearer ${JIRA_TOKEN}" \
+     -H "Content-Type: application/json" \
+     -d "{\"body\": \"${COMMENT_TEXT}\"}"
+   ```
+4. Check response status code (201 = success)
+5. If 401/403, report token issue; if network error, suggest VPN check
+
+**If JIRA_TOKEN is not available (MCP path):**
+
 Call `jira_add_issue_comment` with:
 - `key`: the resolved ticket key (e.g. `DSOSYS-2965`).
 - `comment`: the extracted message text, formatted using Jira wiki markup (see below).

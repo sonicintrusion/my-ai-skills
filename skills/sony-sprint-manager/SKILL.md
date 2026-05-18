@@ -31,7 +31,27 @@ Each sprint gets its own subfolder using a short sprint key (e.g. `94-3`): `<spr
 
 Ticket markdown files live directly inside the sprint subfolder: `<sprintDir>/<ISSUE_KEY>.md`
 
-## Mandatory first step: retrieve the current sprint (Jira MCP)
+## Mandatory first step: retrieve the current sprint (Jira MCP or REST API)
+
+Check if `JIRA_TOKEN` environment variable is set to determine access method. See `../api-fallback/jira-rest-api.md` for REST API details.
+
+**If JIRA_TOKEN is available (REST API path):**
+
+1. Fetch candidate boards:
+   ```bash
+   curl -X GET “${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/agile/1.0/board?name=Sony&maxResults=100” \
+     -H “Authorization: Bearer ${JIRA_TOKEN}”
+   ```
+2. Select the board (prefer `type == “scrum”` and name contains “sony” or “sonic”)
+3. Retrieve the current sprint:
+   ```bash
+   curl -X GET “${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/agile/1.0/board/${BOARD_ID}/sprint?state=active” \
+     -H “Authorization: Bearer ${JIRA_TOKEN}”
+   ```
+4. If no active sprint, retry with `state=future`
+5. Choose the first returned sprint as “current”
+
+**If JIRA_TOKEN is not available (MCP path):**
 
 1. Before calling any Jira MCP tool, check its schema/descriptor first (whatever mechanism the runtime provides for tool schema inspection).
 
@@ -43,13 +63,13 @@ Ticket markdown files live directly inside the sprint subfolder: `<sprintDir>/<I
 4. Select the board.
    - If exactly one board matches, use it.
    - If multiple match, prefer (in order):
-     - `type == "scrum"`
+     - `type == “scrum”`
      - board name contains “sony” or “sonic” (case-insensitive)
    - If still ambiguous, ask the user to pick the board name/id before proceeding.
 
 5. Retrieve the current sprint.
-   - Call `jira_get_sprints_from_board` with `state: "active"` for the selected `boardId`.
-   - If no active sprint is returned, retry with `state: "future"` and explain that there is no active sprint.
+   - Call `jira_get_sprints_from_board` with `state: “active”` for the selected `boardId`.
+   - If no active sprint is returned, retry with `state: “future”` and explain that there is no active sprint.
    - Choose the first returned sprint as “current” (Jira returns active/future sprints ordered; if more than one active is returned, pick the one with the latest `startDate` if present).
 
 ## Create/update the sprint markdown file
@@ -71,6 +91,24 @@ Once you have the sprint object:
 
 If the user asks to sync issues, or if the workspace file is newly created:
 
+**If JIRA_TOKEN is available (REST API path):**
+
+1. Call the sprint issues endpoint:
+   ```bash
+   curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/agile/1.0/sprint/${SPRINT_ID}/issue" \
+     -H "Authorization: Bearer ${JIRA_TOKEN}"
+   ```
+2. Parse the JSON response for issues array
+3. Append a section to `work.md`:
+
+```markdown
+## Sprint issues
+
+- TODO: list issues here (key, summary, status, assignee)
+```
+
+**If JIRA_TOKEN is not available (MCP path):**
+
 1. Check the `jira_get_sprint_issues` schema/descriptor (MANDATORY before calling).
 2. Call `jira_get_sprint_issues` for the `sprintId` (use default `fields`; do not set `expand` unless requested).
 3. Append a section to `work.md`:
@@ -87,20 +125,44 @@ When the user asks to generate markdown files for each ticket assigned to them i
 
 1. Ensure you have:
    - The current `sprintId`, `sprintName`, and `sprintDir` from the steps above
-   - The current user identity from Jira (use `jira_get_me` if available)
+   - The current user identity from Jira
 
+**If JIRA_TOKEN is available (REST API path):**
+
+1. Get current user:
+   ```bash
+   curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/myself" \
+     -H "Authorization: Bearer ${JIRA_TOKEN}"
+   ```
+2. Retrieve sprint issues:
+   ```bash
+   curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/agile/1.0/sprint/${SPRINT_ID}/issue" \
+     -H "Authorization: Bearer ${JIRA_TOKEN}"
+   ```
+3. Filter to issues assigned to the current user (match on accountId)
+4. For each filtered issue, get full details:
+   ```bash
+   curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISSUE_KEY}?fields=description,comment" \
+     -H "Authorization: Bearer ${JIRA_TOKEN}"
+   ```
+
+**If JIRA_TOKEN is not available (MCP path):**
+
+1. Get current user identity (use `jira_get_me` if available)
 2. Retrieve sprint issues with `jira_get_sprint_issues`.
-
 3. Filter to issues assigned to the current user.
    - Prefer matching on immutable user identity (e.g. account id) when present; fall back to display name/email only if that’s all Jira returns.
+4. For each filtered issue, call `jira_get_issue` with `additionalFields: ["description"]` for full details
+
+**For both paths:**
 
 4. For each filtered issue, create a markdown file:
    - `ticketPath`: `<sprintDir>/<ISSUE_KEY>.md`
    - Never overwrite existing content; if the file exists, only update the frontmatter/header section (leave user notes intact).
-   - Populate **Description** by calling `jira_get_issue` with `additionalFields: ["description"]` and formatting the returned description as markdown bullets.
+   - Populate **Description** by formatting the returned description as markdown bullets.
    - Populate **Notes / Updates** by pulling Jira history:
-     - Prefer `jira_get_issue` with `additionalFields: ["comment"]` (for comments). Optionally include `expand: "changelog"` when useful and not too large.
-     - Optionally call `jira_get_worklog` for time log entries.
+     - For REST API: Include comments from the response
+     - For MCP: Use `jira_get_issue` with `additionalFields: ["comment"]`. Optionally include `expand: "changelog"` when useful and not too large. Optionally call `jira_get_worklog` for time log entries.
      - Write a concise, dated bullet list under **Notes / Updates**.
      - Always format URLs as proper Markdown links or wrap them in angle brackets (`<...>`) to avoid bare-URL lint failures.
      - If the user already has notes there, append a `**Jira history**` subsection rather than overwriting.

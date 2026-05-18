@@ -49,6 +49,25 @@ If the user provides no content (invokes the skill with no arguments), ask: "Wha
 ## Step 4: Post a comment on the Jira ticket
 
 1. Derive the Jira issue key from the BAU ticket filename (e.g. `DSOSYS-2886.md` → `DSOSYS-2886`).
+
+Check if `JIRA_TOKEN` environment variable is set.
+
+**If JIRA_TOKEN is available (REST API path):**
+
+1. Get the token and base URL from environment
+2. Post the comment via REST API (see `../api-fallback/jira-rest-api.md`):
+   ```bash
+   curl -X POST "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISSUE_KEY}/comment" \
+     -H "Authorization: Bearer ${JIRA_TOKEN}" \
+     -H "Content-Type: application/json" \
+     -d "{\"body\": \"${COMMENT_TEXT}\"}"
+   ```
+3. Check response status code (201 = success)
+4. If 401/403, report token issue; if network error, suggest VPN check
+5. Still complete the local markdown update even if Jira is unreachable
+
+**If JIRA_TOKEN is not available (MCP path):**
+
 2. Call `jira_add_issue_comment` with:
    - `key`: the issue key derived above.
    - `comment`: the update content provided by the user, formatted using Jira wiki markup (see below).

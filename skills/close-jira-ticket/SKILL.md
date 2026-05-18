@@ -38,6 +38,32 @@ If no ticket ID can be found, ask: "Which Jira ticket should I close?"
 
 ## Step 3: Transition the ticket to Done
 
+Check if `JIRA_TOKEN` environment variable is set.
+
+**If JIRA_TOKEN is available (REST API path):**
+
+1. Get available transitions:
+   ```bash
+   curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISSUE_KEY}/transitions" \
+     -H "Authorization: Bearer ${JIRA_TOKEN}"
+   ```
+2. Find the transition whose name matches `Done` (case-insensitive). If no exact match, prefer `Closed`, then `Resolved`.
+3. Execute the transition (see `../api-fallback/jira-rest-api.md` for details):
+   ```bash
+   curl -X POST "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISSUE_KEY}/transitions" \
+     -H "Authorization: Bearer ${JIRA_TOKEN}" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "transition": { "id": "TRANSITION_ID" },
+       "fields": { "resolution": { "name": "Done" } }
+     }'
+   ```
+4. Check response status code (204 = success)
+5. If `resolution` cannot be set during transition, make a separate update request
+6. If 401/403, report token issue; if network error, suggest VPN check
+
+**If JIRA_TOKEN is not available (MCP path):**
+
 1. Call `jira_get_transitions` with the ticket key to retrieve available transitions.
 2. Find the transition whose name matches `Done` (case-insensitive). If no exact match, prefer `Closed`, then `Resolved`.
 3. Call `jira_transition_issue` with:
@@ -56,8 +82,21 @@ If no `Done`/`Closed`/`Resolved` transition is found, list the available transit
 
 ## Step 4: Post a closing comment (optional)
 
-If the user provided a closing note in Step 1, call `jira_add_issue_comment` with:
+If the user provided a closing note in Step 1:
 
+**If JIRA_TOKEN is available (REST API path):**
+
+Post the comment via REST API (see `../api-fallback/jira-rest-api.md`):
+```bash
+curl -X POST "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISSUE_KEY}/comment" \
+  -H "Authorization: Bearer ${JIRA_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d "{\"body\": \"${COMMENT_TEXT}\"}"
+```
+
+**If JIRA_TOKEN is not available (MCP path):**
+
+Call `jira_add_issue_comment` with:
 - `key`: the ticket key.
 - `comment`: the closing note text, formatted using Jira wiki markup (see below).
 
