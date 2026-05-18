@@ -115,3 +115,15 @@ The loaded rules apply to all tasks in the session including:
 - If the repo contains a `.complianceignore` file at the root, treat its
   contents as a glob-pattern exclusion list for compliance document scanning
   (same syntax as `.gitignore`).
+
+## Markdown quality rules
+
+All markdown files generated or modified by this skill must follow these rules:
+
+- One blank line before/after headings (MD022)
+- Lists surrounded by blank lines (MD032)
+- No trailing spaces (MD009)
+- No multiple blank lines (MD012)
+- No bare URLs — use `<https://…>` or `[text](url)` (MD034)
+- File ends with single newline (MD047)
+- Fenced code blocks specify language (MD040)
