@@ -331,4 +331,4 @@ This skill is called by:
 - Direct user commands (`update 2965: comment`)
 - Potentially other skills that need Jira operations
 
-Other skills (sprint-manager, pillar-sync) use Jira MCP/REST API directly and do NOT invoke this skill.
+Other skills (sprint-manager, pillar) use Jira MCP/REST API directly and do NOT invoke this skill.
