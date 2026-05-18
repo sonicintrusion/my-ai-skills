@@ -113,20 +113,21 @@ If MCP succeeds, done. If MCP fails or unavailable, proceed to fallback.
 **If MCP fails or unavailable (REST API fallback):**
 
 1. Check if `JIRA_TOKEN` environment variable is set.
-2. If yes, get base URL: `JIRA_BASE_URL` from environment (default: `https://jira.sie.sony.com`)
-3. Make a REST API request:
+1. If yes, get base URL: `JIRA_BASE_URL` from environment (default: `https://jira.sie.sony.com`)
+1. Make a REST API request:
+
    ```bash
    curl -X POST "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISSUE_KEY}/comment" \
      -H "Authorization: Bearer ${JIRA_TOKEN}" \
      -H "Content-Type: application/json" \
      -d "{\"body\": \"${COMMENT_TEXT}\"}"
    ```
-4. Check response status code (200/201 = success)
+
+1. Check response status code (200/201 = success)
 
 **If both fail:**
 
 Suggest VPN check, MCP restart, or verify REST API token.
-```
 
 ## Adding New Services
 
