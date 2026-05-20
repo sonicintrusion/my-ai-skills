@@ -1,6 +1,7 @@
 ---
 name: pillar
 description: Manage pillar workspaces synced with Confluence and Jira. Supports init (bootstrap new pillar), sync (bidirectional sync), and status (quick update). Use when the user says "pillar-init pho", "pillar-sync pho", "pillar-status pho", or similar. Automatically detects operation from user input.
+disable-model-invocation: true
 ---
 
 # Pillar Skill
@@ -35,17 +36,19 @@ All operations need a **pillar code** — short lowercase identifier (e.g. `pho`
 ## Common: API Access
 
 **MCP Primary (Confluence & Jira):**
+
 - Confluence MCP: Requires Okta/VPN auth (if auth error, open sign-in URL and retry)
 - Jira MCP: Requires VPN connection
 - If MCP fails, suggest VPN check or MCP server restart
 
 **REST API Fallback:**
+
 - Not typically used for pillar operations (MCP is primary)
 - Confluence and Jira tokens available if needed
 
 ## Common: Workspace Structure
 
-```
+```text
 pillar/
 └── <pillar-code>/
     ├── config.md           # Pillar configuration
@@ -81,7 +84,8 @@ Ask the user for (or extract from their message):
 ## Step 1: Create folder structure
 
 Create directories:
-```
+
+```text
 pillar/<pillar-code>/
 pillar/<pillar-code>/_archived/
 ```
@@ -109,6 +113,7 @@ Internally invoke the **Sync** operation (see Operation 2 below) using the same 
 ## Step 4: Report
 
 Confirm:
+
 - Workspace created at `pillar/<pillar-code>/`
 - Config file written
 - Initial sync completed (show sync summary)
@@ -119,19 +124,20 @@ Confirm:
 
 Full bidirectional sync between local workspace and Confluence/Jira.
 
-## Input Patterns
+## Op 2: Input Patterns
 
 - `pillar-sync pho`
 - `sync pho pillar`
 - `sync pillar roadmap for pho`
 
-## Goal
+## Op 2: Goal
 
 Two-way sync:
+
 1. **Pull** — Fetch current state from Confluence and Jira into local files
 2. **Push** — Detect local changes and write them back to Jira
 
-## Inputs Required
+## Op 2: Inputs Required
 
 1. **Pillar code** — e.g. `pho`
 2. **Confluence page URL or page ID** (optional if config exists)
@@ -139,6 +145,7 @@ Two-way sync:
 ## Step 1: Load pillar config
 
 Read `pillar/<pillar-code>/config.md` for:
+
 - `confluence_page_id`
 - `jira_project_key` (default: `DSOSYS`)
 - `pillar_name`
@@ -151,10 +158,12 @@ If config doesn't exist, create it using provided inputs.
 **Try MCP first:**
 
 Call `confluence_get_page` with:
+
 - `id: <page_id>`
 - `includeBody: true`
 
 Parse the storage-format body to extract:
+
 - Roadmap table rows (Epic, Description, Status, Owner, Notes columns)
 - Epic keys (e.g. `DSOSYS-XXXX`)
 - Epic titles, statuses, owners
@@ -164,6 +173,7 @@ If page is XML/HTML, look for `<table>` elements and extract `<td>` cell text. S
 ## Step 3: Determine epics
 
 For each row/item on Confluence page:
+
 - Extract: epic name, Jira key (if present), status, owner, description
 - If no Jira key: flag as `[NO_JIRA_KEY]` — do NOT auto-create, note in ROADMAP.md
 
@@ -190,6 +200,7 @@ For each file at `pillar/<pillar-code>/<KEY>/EPIC.md` or `pillar/<pillar-code>/<
 ### 5a: Read existing local file
 
 Extract from local file:
+
 - `## Status` section: `Jira status:` and `Assignee:` lines
 - `## Description` section: full description text
 - `## Notes / Updates` → `### Comments`: dated comment entries
@@ -199,6 +210,7 @@ Extract from local file:
 If local status differs from Jira status:
 
 **Try MCP:**
+
 1. Call `jira_get_transitions` for ticket key
 2. Find transition matching local status (case-insensitive)
 3. Call `jira_transition_issue` to apply transition
@@ -211,6 +223,7 @@ If no matching transition, log warning and skip.
 If local description differs meaningfully from Jira:
 
 **Try MCP:**
+
 1. Call `jira_update_issue` with `fields: { description: "<plain text>" }`
 2. Log: `[PUSH] <KEY> description updated`
 
@@ -221,6 +234,7 @@ Only push if local description has substantive content (not placeholder `-`).
 Parse `### Comments` entries: `- YYYY-MM-DD — <comment text>`
 
 **Try MCP:**
+
 1. Call `jira_get_issue` with `additionalFields: ["comment"]`
 2. For each local comment not in Jira (substring match):
    - Call `jira_add_issue_comment`
@@ -231,6 +245,7 @@ Parse `### Comments` entries: `- YYYY-MM-DD — <comment text>`
 If local assignee differs from Jira:
 
 **Try MCP:**
+
 1. Call `jira_get_user_profile` to resolve `accountId`
 2. Call `jira_update_issue` with `fields: { assignee: { accountId: "<id>" } }`
 3. Log: `[PUSH] <KEY> assignee: <old> → <new>`
@@ -333,12 +348,14 @@ For each epic with Jira key:
 Output summary with two sections:
 
 **Pull (Confluence/Jira → local):**
+
 - Epics found on Confluence page
 - Epics with/without Jira keys
 - Epic folders created/updated
 - Child tickets processed
 
 **Push (local → Jira):**
+
 - Status transitions applied
 - Descriptions updated
 - Comments posted
@@ -351,24 +368,25 @@ Output summary with two sections:
 
 Quick status update — sync Jira statuses and archive removed epics.
 
-## Input Patterns
+## Op 3: Input Patterns
 
 - `pillar-status pho`
 - `update pho status`
 - `check pho pillar status`
 - `sync pho epics`
 
-## Goal
+## Op 3: Goal
 
 Keep local workspace in sync with current Jira state and detect removed epics.
 
-## Inputs Required
+## Op 3: Inputs Required
 
 **Pillar code** — e.g. `pho`
 
-## Step 1: Load pillar config
+## Op 3: Step 1: Load pillar config
 
 Read `pillar/<pillar-code>/config.md` for:
+
 - `confluence_page_id`
 - `jira_project_key`
 - `confluence_url`
@@ -386,12 +404,14 @@ Skip `_archived/` subdirectory.
 **Try MCP:**
 
 Call `confluence_get_page` with:
+
 - `id: <confluence_page_id>`
 - `includeBody: true`
 
 Extract list of epic keys currently on Confluence page.
 
 Build two sets:
+
 - **Active epics**: keys on Confluence AND in local workspace
 - **Removed epics**: keys in local workspace but NOT on Confluence
 
@@ -436,6 +456,7 @@ Preserve user-written content below `## Notes` heading.
 ## Step 7: Report
 
 Output summary:
+
 - Epics updated (count)
 - Epics archived (count, list keys)
 - Tickets with status changes (key + old → new)
@@ -448,11 +469,13 @@ Output summary:
 ## MCP Errors
 
 **Confluence MCP:**
+
 - Authentication required: Open sign-in URL and retry
 - Network error: Check VPN connection
 - Page not found: Verify page ID in config
 
 **Jira MCP:**
+
 - Network error: Check VPN connection
 - Authentication required: MCP interactive sign-in
 - Ticket not found: Epic may have been deleted
@@ -472,24 +495,16 @@ Output summary:
 
 ---
 
-# Markdown Quality Rules
+## Markdown quality rules
 
-All markdown files must follow these rules:
-
-- One blank line before/after headings (MD022)
-- Lists surrounded by blank lines (MD032)
-- No trailing spaces (MD009)
-- No multiple blank lines (MD012)
-- No bare URLs — use `<https://…>` or `[text](url)` (MD034)
-- File ends with single newline (MD047)
-- Fenced code blocks specify language (MD040)
-- Table separator rows: `| --- |` not `|---|` (MD060)
+Apply the rules defined in the `markdownlint` skill for all files created or modified.
 
 ---
 
 # Integration Notes
 
 This skill manages pillar workspaces independently. Other skills that may reference pillars:
+
 - `sony-sprint-manager` — Sprint management (separate from pillars)
 - `jira` — Direct Jira operations (pillars use Jira data but don't invoke jira skill)
 

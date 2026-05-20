@@ -118,12 +118,4 @@ The loaded rules apply to all tasks in the session including:
 
 ## Markdown quality rules
 
-All markdown files generated or modified by this skill must follow these rules:
-
-- One blank line before/after headings (MD022)
-- Lists surrounded by blank lines (MD032)
-- No trailing spaces (MD009)
-- No multiple blank lines (MD012)
-- No bare URLs — use `<https://…>` or `[text](url)` (MD034)
-- File ends with single newline (MD047)
-- Fenced code blocks specify language (MD040)
+Apply the rules defined in the `markdownlint` skill for all files created or modified.

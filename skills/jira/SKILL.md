@@ -1,6 +1,7 @@
 ---
 name: jira
 description: Interact with Jira tickets. Supports creating, updating, and closing tickets. Use when the user says "update 2965: comment", "close 2965", "create jira ticket", or "update bau: note". Parses ticket IDs, handles BAU tickets specially, and works with both MCP and REST API.
+disable-model-invocation: true
 ---
 
 # Jira Skill
@@ -14,7 +15,6 @@ Unified interface for Jira ticket operations: create, update, close, and special
 1. **Update** - Add a comment to any Jira ticket
 2. **Close** - Transition a ticket to Done and update local markdown
 3. **Update BAU** - Special handling for BAU tickets in sprints
-4. **Create** - Create a new Jira ticket (future)
 
 ## Operation Detection
 
@@ -25,7 +25,6 @@ Parse the user's message to determine which operation:
 - `close 2965` → **Close ticket**
 - `close 2965: closing note` → **Close ticket with comment**
 - `update bau: daily notes` → **Update BAU ticket**
-- `create ticket: summary` → **Create ticket** (future)
 
 ## Common: Ticket ID Expansion
 
@@ -45,28 +44,29 @@ See `../mcp-api-access/jira-rest-api.md` for REST API details.
 
 ---
 
-# Operation 1: Update Ticket
+## Operation 1: Update Ticket
 
 Add a comment to any Jira ticket.
 
-## Input Patterns
+### Op 1: Input patterns
 
 - `update 2965: investigation ok`
 - `please update DSOSYS-2965: investigation ok`
 - `comment on 2965: investigation ok`
 
-## Step 1: Parse input
+### Op 1: Step 1 — Parse input
 
 - Extract ticket ID (expand if needed)
 - Extract comment text (everything after first `:`)
 - If no ticket ID: ask "Which Jira ticket should I update?"
-- If no comment: ask "What comment should I add to <ticket-key>?"
+- If no comment: ask "What comment should I add to `<ticket-key>`?"
 
-## Step 2: Post the comment
+### Op 1: Step 2 — Post the comment
 
 **Try MCP first:**
 
 Call `jira_add_issue_comment` with:
+
 - `key`: the resolved ticket key
 - `comment`: the message text in Jira wiki markup
 
@@ -89,14 +89,15 @@ Check response status (201 = success).
 
 Suggest VPN check, MCP restart, or verify REST API token.
 
-## Step 3: Confirm
+### Op 1: Step 3 — Confirm
 
 Report:
+
 - The ticket key updated
 - Success/failure status
 - Preview of the comment added
 
-## Jira Wiki Markup Reference
+### Jira wiki markup reference
 
 - Bold: `*text*`
 - Italic: `_text_`
@@ -110,31 +111,31 @@ Report:
 
 ---
 
-# Operation 2: Close Ticket
+## Operation 2: Close Ticket
 
 Transition a Jira ticket to Done and update local markdown file.
 
-## Input Patterns
+### Op 2: Input patterns
 
 - `close 2965`
 - `close DSOSYS-2965`
 - `mark 2965 as done`
 - `close 2965: all dashboards delivered` (with closing note)
 
-## Step 1: Parse input
+### Op 2: Step 1 — Parse input
 
 - Extract ticket ID (expand if needed)
 - Extract optional closing note (everything after `:`)
 - If no ticket ID: ask "Which Jira ticket should I close?"
 
-## Step 2: Locate local markdown file
+### Op 2: Step 2 — Locate local markdown file
 
 1. Determine workspace root
 2. Search `sprints/` recursively for `<TICKET-KEY>.md`
 3. If found, remember path for Step 5
 4. If not found, skip markdown update
 
-## Step 3: Transition to Done
+### Op 2: Step 3 — Transition to Done
 
 **Try MCP first:**
 
@@ -168,7 +169,7 @@ curl -X POST "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISS
 
 Ask user to check VPN. Suggest MCP restart or verify REST API token.
 
-## Step 4: Post closing comment (optional)
+### Op 2: Step 4 — Post closing comment (optional)
 
 If closing note was provided:
 
@@ -187,7 +188,7 @@ curl -X POST "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISS
   -d "{\"body\": \"${COMMENT_TEXT}\"}"
 ```
 
-## Step 5: Update local markdown
+### Op 2: Step 5 — Update local markdown
 
 If markdown file was found in Step 2:
 
@@ -197,9 +198,10 @@ If markdown file was found in Step 2:
    - Format: `- <TODAY_DATE> — <closing_note>`
 4. Ensure proper markdown formatting (no bare URLs, trailing spaces, etc.)
 
-## Step 6: Confirm
+### Op 2: Step 6 — Confirm
 
 Report:
+
 - Ticket key closed
 - Jira transition success/failure
 - Resolution status
@@ -208,16 +210,16 @@ Report:
 
 ---
 
-# Operation 3: Update BAU Ticket
+## Operation 3: Update BAU Ticket
 
 Special handling for BAU (Business As Usual) tickets in the current sprint.
 
-## Input Patterns
+### Op 3: Input patterns
 
 - `update bau: daily standup notes`
 - `update bau ticket: completed dashboard review`
 
-## Step 1: Locate BAU ticket file
+### Op 3: Step 1 — Locate BAU ticket file
 
 1. Determine workspace root
 2. Locate `sprints/` folder
@@ -230,16 +232,17 @@ Special handling for BAU (Business As Usual) tickets in the current sprint.
 5. If no match in recent sprint, search all sprint folders (newest first)
 6. If still no match, report "No BAU ticket found" and stop
 
-## Step 2: Parse update content
+### Op 3: Step 2 — Parse update content
 
 The user's message after "update bau:" is the update content. Can be:
+
 - Description of work done
 - URL or Slack link
 - Combination of both
 
 If no content provided, ask: "What would you like to add to the BAU ticket?"
 
-## Step 3: Append to local markdown
+### Op 3: Step 3 — Append to local markdown
 
 1. Open the BAU ticket file
 2. Locate `### Comments` under `## Notes / Updates`
@@ -248,7 +251,7 @@ If no content provided, ask: "What would you like to add to the BAU ticket?"
    - Use YYYY-MM-DD format for date
    - Wrap bare URLs in `<...>` for markdown compliance
 
-## Step 4: Post to Jira
+### Op 3: Step 4 — Post to Jira
 
 1. Derive Jira key from filename (e.g. `DSOSYS-2886.md` → `DSOSYS-2886`)
 
@@ -269,22 +272,17 @@ curl -X POST "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISS
 
 If Jira fails (network/auth), still complete local markdown update. Suggest VPN check, MCP restart, or verify REST API token.
 
-## Step 5: Confirm
+### Op 3: Step 5 — Confirm
 
 Report:
+
 - BAU ticket file path updated
 - Exact bullet appended
 - Jira comment posted (success/failure with issue key)
 
 ---
 
-# Operation 4: Create Ticket (Future)
-
-Placeholder for creating new Jira tickets. To be implemented.
-
----
-
-# Error Handling
+## Error Handling
 
 ## Network/VPN Errors
 
@@ -311,23 +309,16 @@ Placeholder for creating new Jira tickets. To be implemented.
 
 ---
 
-# Markdown Quality Rules
+## Markdown quality rules
 
-All markdown file edits must follow these rules:
-
-- No bare URLs — use `<https://…>` or `[text](url)` (MD034)
-- No trailing spaces (MD009)
-- Lists surrounded by blank lines (MD032)
-- One blank line before/after headings (MD022)
-- No multiple blank lines (MD012)
-- File ends with single newline (MD047)
-- Fenced code blocks specify language (MD040)
+Apply the rules defined in the `markdownlint` skill for all files created or modified.
 
 ---
 
-# Integration with Other Skills
+## Integration with Other Skills
 
 This skill is called by:
+
 - Direct user commands (`update 2965: comment`)
 - Potentially other skills that need Jira operations
 

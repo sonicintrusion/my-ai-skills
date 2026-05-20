@@ -46,33 +46,38 @@ curl -X GET "${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com}/rest/api/us
 ### Token Issues
 
 **Symptom**: 401 Unauthorized
+
 - **Cause**: Token is invalid or expired
 - **Fix**: Regenerate token in the service's settings
 
 **Symptom**: 403 Forbidden
+
 - **Cause**: Token lacks required permissions
 - **Fix**: Update token permissions/scopes
 
 ### Network Issues
 
 **Symptom**: Connection timeout or refused
+
 - **Cause**: VPN required or firewall blocking
 - **Fix**: Connect to VPN or check network settings
 
 **Symptom**: Certificate errors
+
 - **Cause**: Self-signed certificates or corporate proxy
 - **Fix**: Add `-k` flag to curl (insecure, use cautiously) or configure CA certificates
 
 ### MCP Fallback
 
 If REST API fails but MCP is configured:
+
 1. Skill will automatically attempt to use MCP
 2. Check MCP server status: Look for MCP server logs
 3. Restart MCP servers if needed
 
 ## Decision Flow
 
-```
+```text
 ┌─────────────────────────┐
 │  Skill needs to access  │
 │   external service      │

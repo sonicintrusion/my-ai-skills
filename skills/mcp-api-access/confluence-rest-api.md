@@ -37,6 +37,7 @@ curl -X GET "${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com}/rest/api/sp
 ```
 
 **Query parameters:**
+
 - `expand`: Comma-separated list of entities to expand
   - Example: `expand=description,homepage,metadata.labels`
 
@@ -51,6 +52,7 @@ curl -X GET "${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com}/rest/api/sp
 ```
 
 **Query parameters:**
+
 - `type`: Filter by space type (`global` or `personal`)
 - `status`: Filter by status (`current` or `archived`)
 - `limit`: Results per page (max: 500)
@@ -67,6 +69,7 @@ curl -X GET "${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com}/rest/api/co
 ```
 
 **Query parameters:**
+
 - `expand`: Comma-separated list of entities to expand
   - Common values: `body.storage,body.view,version,space,history,ancestors,metadata.labels`
 - `status`: Content status (`current`, `trashed`, `draft`, `historical`)
@@ -84,6 +87,7 @@ curl -X GET "${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com}/rest/api/co
 ```
 
 **Query parameters:**
+
 - `spaceKey`: Space key (required)
 - `title`: Exact page title (required)
 - `expand`: Entities to expand
@@ -117,6 +121,7 @@ curl -X POST "${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com}/rest/api/c
 ```
 
 **Note:**
+
 - `ancestors` is optional (if omitted, page is created at space root)
 - Content must be in Confluence storage format (XHTML-like)
 
@@ -144,6 +149,7 @@ curl -X PUT "${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com}/rest/api/co
 ```
 
 **Note:**
+
 - `version.number` must be current version + 1
 - Get current version from a GET request first
 
@@ -181,6 +187,7 @@ curl -X GET "${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com}/rest/api/co
 ```
 
 **Query parameters:**
+
 - `expand`: Entities to expand (e.g., `body.storage,version`)
 - `limit`: Results per page
 - `start`: Pagination offset
@@ -213,12 +220,14 @@ curl -X GET "${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com}/rest/api/co
 ```
 
 **Query parameters:**
+
 - `cql`: Confluence Query Language query (URL-encoded)
 - `expand`: Entities to expand
 - `limit`: Results per page (max: 200)
 - `start`: Pagination offset
 
 **CQL Examples:**
+
 - `space=SPACEKEY AND type=page`: All pages in a space
 - `creator=currentUser()`: Content created by current user
 - `lastModified >= "2026-01-01"`: Recently modified content
@@ -255,6 +264,7 @@ Confluence macros use structured-macro elements:
 ```
 
 Common macro names:
+
 - `info`, `note`, `warning`, `tip`: Colored panels
 - `code`: Code block
 - `toc`: Table of contents

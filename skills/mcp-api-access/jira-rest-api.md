@@ -27,6 +27,7 @@ curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISSU
 ```
 
 **Query parameters:**
+
 - `fields`: Comma-separated list of fields to return (default: all)
   - Example: `fields=summary,status,assignee,description`
 - `expand`: Comma-separated list of entities to expand
@@ -46,6 +47,7 @@ curl -X POST "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISS
 ```
 
 **Jira wiki markup format:**
+
 - Bold: `*text*`
 - Italic: `_text_`
 - Code: `{{text}}`
@@ -113,6 +115,7 @@ curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/agile/1.0/board" \
 ```
 
 **Query parameters:**
+
 - `name`: Filter by board name
 - `type`: Filter by board type (`scrum` or `kanban`)
 - `startAt`: Pagination start (default: 0)
@@ -128,6 +131,7 @@ curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/agile/1.0/board/${
 ```
 
 **Query parameters:**
+
 - `state`: Filter by sprint state (`active`, `future`, `closed`)
 - `startAt`: Pagination start
 - `maxResults`: Page size
@@ -142,6 +146,7 @@ curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/agile/1.0/sprint/$
 ```
 
 **Query parameters:**
+
 - `fields`: Comma-separated list of fields
 - `startAt`: Pagination start
 - `maxResults`: Page size
@@ -157,6 +162,7 @@ curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/search" \
 ```
 
 **Query parameters:**
+
 - `jql`: JQL query string (URL-encoded)
 - `fields`: Comma-separated list of fields
 - `startAt`: Pagination start

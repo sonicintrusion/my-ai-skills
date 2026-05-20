@@ -99,7 +99,7 @@ See the following files for REST API implementation details:
 
 ## Example Implementation
 
-```markdown
+````markdown
 ## Step 2: Post the comment
 
 **Try MCP first:**

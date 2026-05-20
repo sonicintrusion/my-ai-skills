@@ -1,8 +1,11 @@
 ---
 name: pull-request
 description: >-
-  Pull request skill for GitHub. Covers creating, updating, reviewing, and
-  merging pull requests. Follows the access strategy in mcp-api-access.
+  Manage the full GitHub pull request lifecycle: create, update, review, check
+  CI, and merge. Use when the user asks to create a PR, open a pull request,
+  update PR title or description, mark ready for review, check PR status, review
+  code changes, investigate CI failures, or merge a branch.
+disable-model-invocation: true
 ---
 
 # GitHub Pull Request Skill
@@ -16,6 +19,23 @@ For all GitHub access, follow the tier order defined in
 `../mcp-api-access/access-strategy.md` (MCP → gh CLI → REST API).
 
 For REST API details, see `../mcp-api-access/github-rest-api.md`.
+
+---
+
+## Tool Mapping
+
+Use the first available tier for each operation.
+
+| Operation | MCP tool | gh CLI | REST API endpoint |
+|-----------|----------|--------|-------------------|
+| Create PR | `github_create_pull_request` | `gh pr create` | `POST /repos/{owner}/{repo}/pulls` |
+| Get PR | `github_get_file_contents` (via PR number) | `gh pr view {number}` | `GET /repos/{owner}/{repo}/pulls/{number}` |
+| Update PR | `github_update_pull_request` | `gh pr edit {number}` | `PATCH /repos/{owner}/{repo}/pulls/{number}` |
+| List PRs | `github_list_pull_requests` | `gh pr list` | `GET /repos/{owner}/{repo}/pulls` |
+| Add comment | `github_add_issue_comment` | `gh pr comment {number}` | `POST /repos/{owner}/{repo}/issues/{number}/comments` |
+| Get checks | `github_get_workflow_run` | `gh pr checks {number}` | `GET /repos/{owner}/{repo}/commits/{sha}/check-runs` |
+| Get job logs | `github_get_job_logs` | `gh run view {run-id} --log-failed` | `GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs` |
+| Merge PR | _(not available)_ | `gh pr merge {number} --squash` | `PUT /repos/{owner}/{repo}/pulls/{number}/merge` |
 
 ---
 
@@ -50,7 +70,32 @@ Required behavior:
 1. Keep PR in draft until the user asks to mark it ready for review, or they
    do it themselves.
 1. Return PR number, URL, final title, and description preview.
-1. If the PR is marked ready for review, proceed to Operation 6.
+1. If the PR is marked ready for review, proceed to Operation 5.
+
+### Op 1: gh CLI example
+
+```bash
+gh pr create \
+  --title "DSOSYS-3080 - fix: 30 day monitor for DEP-E1 cluster" \
+  --body "$(cat pr-body.md)" \
+  --draft \
+  --base main
+```
+
+### Op 1: REST API example
+
+```bash
+curl -X POST "${GITHUB_API_URL:-https://github.sie.sony.com/api/v3}/repos/${OWNER}/${REPO}/pulls" \
+  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  -H "Accept: application/vnd.github+json" \
+  -d '{
+    "title": "DSOSYS-3080 - fix: 30 day monitor for DEP-E1 cluster",
+    "body": "PR description here",
+    "head": "dsosys-3080/fix-dep-e1-30day-monitor",
+    "base": "main",
+    "draft": true
+  }'
+```
 
 ---
 
@@ -72,7 +117,29 @@ State transition rule:
 
 - If user explicitly requests, convert draft PR to ready-for-review.
 - Do not convert draft to ready automatically.
-- After converting to ready-for-review, proceed to Operation 6.
+- After converting to ready-for-review, proceed to Operation 5.
+
+### Op 2: gh CLI examples
+
+```bash
+# Update title and body
+gh pr edit {number} --title "new title" --body "new description"
+
+# Mark ready for review
+gh pr ready {number}
+
+# Convert back to draft
+gh pr edit {number} --draft
+```
+
+### Op 2: REST API example
+
+```bash
+curl -X PATCH "${GITHUB_API_URL:-https://github.sie.sony.com/api/v3}/repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}" \
+  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  -H "Accept: application/vnd.github+json" \
+  -d '{"draft": false}'
+```
 
 ---
 
@@ -91,6 +158,27 @@ Required behavior:
 1. Post review or comment action.
 1. Report thread status and outstanding items.
 
+### Op 3: gh CLI examples
+
+```bash
+# Add a general comment
+gh pr comment {number} --body "comment text"
+
+# Submit a review
+gh pr review {number} --approve
+gh pr review {number} --request-changes --body "feedback here"
+```
+
+### Op 3: REST API example
+
+```bash
+# Add comment (uses issues endpoint — PR comments are issues comments)
+curl -X POST "${GITHUB_API_URL:-https://github.sie.sony.com/api/v3}/repos/${OWNER}/${REPO}/issues/${PR_NUMBER}/comments" \
+  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  -H "Accept: application/vnd.github+json" \
+  -d '{"body": "comment text"}'
+```
+
 ---
 
 ## Operation 4: Checks and Merge Readiness
@@ -107,9 +195,16 @@ Required behavior:
 1. Summarize blockers (failed checks, missing approvals, requested changes).
 1. Return merge readiness verdict.
 
+### Op 4: gh CLI example
+
+```bash
+gh pr checks {number}
+gh pr view {number} --json reviewDecision,mergeable,statusCheckRollup
+```
+
 ---
 
-## Operation 6: CI Check After Ready for Review
+## Operation 5: CI Check After Ready for Review
 
 This operation runs automatically after a PR transitions to ready-for-review,
 whether triggered by Operation 1 or Operation 2.
@@ -117,6 +212,11 @@ whether triggered by Operation 1 or Operation 2.
 ### Step 1: Check for running CI jobs
 
 Query the PR's status checks to determine if any CI jobs are in progress.
+
+```bash
+gh pr checks {number} --watch
+# or via MCP: github_get_workflow_run with the run ID from the PR
+```
 
 If no CI jobs are running or queued, report that and stop — no further action
 needed.
@@ -149,6 +249,12 @@ If any jobs failed or were cancelled:
 
 1. Identify the failing job(s) by name.
 1. Fetch the relevant log output for each failure.
+
+   ```bash
+   gh run view {run-id} --log-failed
+   # or via MCP: github_get_job_logs with failed_only=true
+   ```
+
 1. Analyse the failure — determine whether it is:
    - a code issue in this PR
    - a flaky or pre-existing failure unrelated to this PR
@@ -160,7 +266,7 @@ If any jobs failed or were cancelled:
 
 ---
 
-## Operation 7: Merge Pull Request
+## Operation 6: Merge Pull Request
 
 Intent examples:
 
@@ -190,12 +296,24 @@ Required behavior:
    - update notes
    - close the related ticket
 
----
+### Op 6: gh CLI example
 
-## Next Content To Add
+```bash
+# Squash merge (default)
+gh pr merge {number} --squash --delete-branch
 
-- Concrete MCP tool mapping per operation
-- Concrete gh command mapping per operation
-- Concrete REST API endpoint mapping per operation
-- Input parsing rules and defaults
-- Structured success/failure response templates
+# Merge commit (only if explicitly requested)
+gh pr merge {number} --merge --delete-branch
+```
+
+### Op 6: REST API example
+
+```bash
+curl -X PUT "${GITHUB_API_URL:-https://github.sie.sony.com/api/v3}/repos/${OWNER}/${REPO}/pulls/${PR_NUMBER}/merge" \
+  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  -H "Accept: application/vnd.github+json" \
+  -d '{
+    "merge_method": "squash",
+    "commit_title": "DSOSYS-3080 - fix: 30 day monitor for DEP-E1 cluster (#42)"
+  }'
+```
