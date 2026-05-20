@@ -59,6 +59,7 @@ curl -X GET "${GITHUB_API_URL:-https://github.sie.sony.com/api/v3}/repos/${OWNER
 ```
 
 **Query parameters:**
+
 - `state`: `open`, `closed`, or `all` (default: `open`)
 - `assignee`: Filter by assignee username
 - `labels`: Comma-separated list of label names
@@ -132,6 +133,7 @@ curl -X GET "${GITHUB_API_URL:-https://github.sie.sony.com/api/v3}/repos/${OWNER
 ```
 
 **Query parameters:**
+
 - `state`: `open`, `closed`, or `all` (default: `open`)
 - `head`: Filter by head branch (`user:branch-name`)
 - `base`: Filter by base branch
@@ -177,6 +179,7 @@ curl -X GET "${GITHUB_API_URL:-https://github.sie.sony.com/api/v3}/repos/${OWNER
 ```
 
 **Query parameters:**
+
 - `sha`: SHA or branch name to start listing commits from
 - `path`: Only commits containing this file path
 - `author`: GitHub username or email address
@@ -196,6 +199,7 @@ curl -X GET "${GITHUB_API_URL:-https://github.sie.sony.com/api/v3}/repos/${OWNER
 ```
 
 **Query parameters:**
+
 - `ref`: Branch, tag, or commit SHA (default: default branch)
 
 **Response:** JSON object with file metadata and base64-encoded content
@@ -214,7 +218,8 @@ curl -X PUT "${GITHUB_API_URL:-https://github.sie.sony.com/api/v3}/repos/${OWNER
   }'
 ```
 
-**Note:** 
+**Note:**
+
 - `content` must be base64-encoded
 - `sha` is required when updating an existing file
 - Omit `sha` when creating a new file
@@ -266,6 +271,7 @@ curl -X GET "${GITHUB_API_URL:-https://github.sie.sony.com/api/v3}/rate_limit" \
 ```
 
 Response headers:
+
 - `X-RateLimit-Limit`: Maximum requests per hour
 - `X-RateLimit-Remaining`: Remaining requests
 - `X-RateLimit-Reset`: Unix timestamp when limit resets
@@ -274,7 +280,7 @@ Response headers:
 
 For paginated responses, GitHub uses Link headers:
 
-```
+```html
 Link: <https://github.sie.sony.com/api/v3/repos/owner/repo/issues?page=2>; rel="next",
       <https://github.sie.sony.com/api/v3/repos/owner/repo/issues?page=5>; rel="last"
 ```

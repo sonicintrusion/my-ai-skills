@@ -134,6 +134,6 @@ Suggest VPN check, MCP restart, or verify REST API token.
 To add support for a new service:
 
 1. Define the token environment variable name: `<SERVICE>_TOKEN`
-2. Create a REST API guide under `skills/api-fallback/<service>-rest-api.md`
+2. Create a REST API guide under `skills/mcp-api-access/<service>-rest-api.md`
 3. Document the API endpoints, authentication, and request/response formats
 4. Update skills that use the service to include the fallback pattern
