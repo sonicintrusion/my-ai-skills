@@ -41,7 +41,7 @@ Priority order for Jira access:
 
 **REST API base URL:** `${JIRA_BASE_URL:-https://jira.sie.sony.com}`
 
-See `../api-fallback/jira-rest-api.md` for REST API details.
+See `../mcp-api-access/jira-rest-api.md` for REST API details.
 
 ---
 

@@ -33,7 +33,7 @@ Ticket markdown files live directly inside the sprint subfolder: `<sprintDir>/<I
 
 ## Mandatory first step: retrieve the current sprint (Jira MCP or REST API)
 
-Check if `JIRA_TOKEN` environment variable is set to determine access method. See `../api-fallback/jira-rest-api.md` for REST API details.
+Check if `JIRA_TOKEN` environment variable is set to determine access method. See `../mcp-api-access/jira-rest-api.md` for REST API details.
 
 **If JIRA_TOKEN is available (REST API path):**
 
