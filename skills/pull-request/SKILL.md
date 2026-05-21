@@ -62,9 +62,34 @@ Required behavior:
 1. Derive `<TICKET-KEY>` from branch or user-provided ticket.
 1. Derive readable title from branch name by converting dashes and
    abbreviations into clear human text.
-1. Build PR description with:
-   - short task summary based on ticket description
-   - commit list in a style similar to gh-generated commit lists
+1. Check for a PR template in the repository before building the description.
+   Look in this order:
+   - `.github/pull_request_template.md`
+   - `.github/PULL_REQUEST_TEMPLATE/pull_request_template.md`
+   - `pull_request_template.md` (repo root)
+   Use the first one found. If none exist, skip this step.
+1. Build PR description:
+   - If a template was found, populate each section of the template with
+     relevant content (task summary, commit list, test plan, etc.).
+     Preserve the template's headings and structure exactly.
+   - If no template was found, use a **simple** description by default
+     unless the user has explicitly requested a detailed one. A simple
+     description is a short plain-text summary and a commit list in a
+     style similar to gh-generated commit lists.
+     If the user explicitly requests a **detailed** description, build a
+     structured description with these four sections in this order:
+       - `## Summary` — plain-English bullet points describing what
+         changed; maximum 3 bullets.
+       - `## Jira` — the ticket key as a markdown link to the Jira issue
+         (derive the URL from the ticket key using the project's known
+         Jira base URL, or ask the user if unknown).
+       - `## Changes` — a markdown table listing every file touched in
+         this PR. Columns: `File`, `Lines changed`, `% of total`. Compute
+         percentages from `git diff --stat` output; round to one decimal
+         place. Sort rows by percentage descending.
+       - `## Related PRs` — a list of any PRs referenced in commit
+         messages, branch names, or ticket links. Leave the section
+         heading with a placeholder note if none are found.
 1. Create the PR in draft state.
 1. Ask the user to review the draft PR.
 1. Keep PR in draft until the user asks to mark it ready for review, or they
