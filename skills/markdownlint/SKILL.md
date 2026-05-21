@@ -14,8 +14,8 @@ Follow the rules defined in DavidAnson's `markdownlint` rules reference:
 ## Workflow
 
 1. **Pre-lint review** — check the document against all rules (see below) before invoking Docker.
-2. **Fix** — correct any violations found in step 1.
-3. **Run Docker** — use the Docker command to confirm zero violations.
+1. **Fix** — correct any violations found in step 1.
+1. **Run Docker** — use the Docker command to confirm zero violations.
 
 ---
 
@@ -130,26 +130,64 @@ Use the official image **`markdownlint/markdownlint`**, which runs Ruby **`mdl`*
 the documents (and config, if any) into the container and set the working directory so paths
 line up.
 
-From the **repository root** (or adjust `$(pwd)` / `$PWD`), lint the tree:
+### Config resolution order
+
+Config is resolved in this priority order (highest first):
+
+1. **Local project config** — `config/markdownlint/.mdlrc` or `.mdlrc` at the repo root.
+1. **Global user config** — `~/.config/markdownlint/.mdlrc` (always mounted at `/global-mdl-config/`).
+
+Always mount the global config into every container run. Then pass `-c` pointing at the local
+config if one exists, or at `/global-mdl-config/.mdlrc` if it does not.
+
+### Shell snippet (auto-detects local config)
+
+Run from the **repository root**:
 
 ```shell
+# Detect local config (subfolder preferred, then repo root)
+if [ -f "config/markdownlint/.mdlrc" ]; then
+  MDL_CONFIG="-c config/markdownlint/.mdlrc"
+elif [ -f ".mdlrc" ]; then
+  MDL_CONFIG="-c .mdlrc"
+else
+  MDL_CONFIG="-c /global-mdl-config/.mdlrc"
+fi
+
 docker run --rm -it \
   -v "$PWD:/work:ro" \
+  -v "$HOME/.config/markdownlint:/global-mdl-config:ro" \
   -w /work \
-  markdownlint/markdownlint .
+  markdownlint/markdownlint \
+  $MDL_CONFIG .
 ```
 
-If **`mdl` config lives in a subfolder** (recommended — see below), pass **`-c`** before paths:
+### Explicit forms
+
+No local config (fall back to global):
 
 ```shell
 docker run --rm -it \
   -v "$PWD:/work:ro" \
+  -v "$HOME/.config/markdownlint:/global-mdl-config:ro" \
+  -w /work \
+  markdownlint/markdownlint \
+  -c /global-mdl-config/.mdlrc .
+```
+
+With a local config in `config/markdownlint/`:
+
+```shell
+docker run --rm -it \
+  -v "$PWD:/work:ro" \
+  -v "$HOME/.config/markdownlint:/global-mdl-config:ro" \
   -w /work \
   markdownlint/markdownlint \
   -c config/markdownlint/.mdlrc .
 ```
 
 - **`-v "$PWD:/work:ro"`** — host repo at `/work` inside the container.
+- **`-v "$HOME/.config/markdownlint:/global-mdl-config:ro"`** — global config always available at `/global-mdl-config/`.
 - **`-w /work`** — `mdl` runs with that as cwd so `.` and relative paths resolve correctly.
 - Arguments after the image name are passed to `mdl`. Use `.` for the whole tree or pass specific files/dirs (e.g. `README.md skills/`).
 
@@ -194,6 +232,21 @@ style "#{File.dirname(__FILE__)}/style.rb"
 pointing at `config/markdownlint/.markdownlint.json`.
 
 ## Disabling rules when they don't fit the repo
+
+### Global vs local placement
+
+Before adding an exclusion, decide where it belongs:
+
+| Scope | Where to add | Criteria |
+| --- | --- | --- |
+| **Global** | `~/.config/markdownlint/style.rb` | Rule is unwanted in every repo (e.g. MD013 line-length, MD041 first-line-heading with YAML frontmatter) |
+| **Local** | `config/markdownlint/style.rb` in the project | Rule conflicts with this repo's specific conventions or content style |
+
+Check the global config first (`~/.config/markdownlint/style.rb`). If the rule is already excluded there, no further action is needed. If it is not excluded globally but should apply universally, add it there. If it is a project-specific exception only, add it to the local config instead.
+
+When the local config does not exist yet, create the layout described in the **Config layout** section above before adding the exclusion.
+
+### Syntax
 
 For **Ruby `mdl`** (`style.rb`):
 
