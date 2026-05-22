@@ -15,8 +15,8 @@ Hostnames do not always embed a readable alias (e.g.
 1. **Scan available tokens.** List all `JENKINS_TOKEN_*` variables set in the
    environment and check whether any alias appears as a substring of the
    hostname (case-insensitive).
-2. **Fall back to prod.** If no alias matches, use `JENKINS_TOKEN_PROD`.
-3. **Verify the token is set.** If the resolved variable is empty, stop and
+1. **Fall back to prod.** If no alias matches, use `JENKINS_TOKEN_PROD`.
+1. **Verify the token is set.** If the resolved variable is empty, stop and
    ask the user which token to use.
 
 ### Token lookup algorithm
@@ -222,11 +222,11 @@ curl -s -u "${USER}:${JENKINS_TOKEN}" \
 
 Jenkins URLs encode job hierarchy using `/job/` separators:
 
-| URL path | `JOB_PATH` value |
-|---|---|
-| `/job/my-pipeline/` | `my-pipeline` |
-| `/job/my-folder/job/my-pipeline/` | `my-folder/job/my-pipeline` |
-| `/job/a/job/b/job/c/` | `a/job/b/job/c` |
+| URL path                           | `JOB_PATH` value             |
+|------------------------------------|------------------------------|
+| `/job/my-pipeline/`                | `my-pipeline`                |
+| `/job/my-folder/job/my-pipeline/`  | `my-folder/job/my-pipeline`  |
+| `/job/a/job/b/job/c/`              | `a/job/b/job/c`              |
 
 For example, the URL:
 
@@ -296,8 +296,8 @@ fi
 
 ## Environment Variables Reference
 
-| Variable | Description | Required |
-|---|---|---|
-| `JENKINS_TOKEN_<ALIAS>` | API token for the named instance | Yes (one per instance) |
-| `JENKINS_TOKEN_PROD` | Default token when alias cannot be inferred | Yes |
-| `USER` | Jenkins username — standard shell variable set automatically | Yes (ask user if unset) |
+| Variable                | Description                                    | Required                |
+|-------------------------|------------------------------------------------|-------------------------|
+| `JENKINS_TOKEN_<ALIAS>` | API token for the named instance               | Yes (one per instance)  |
+| `JENKINS_TOKEN_PROD`    | Default token when alias cannot be inferred    | Yes                     |
+| `USER`                  | Shell username, set automatically by the shell | Yes (ask user if unset) |
