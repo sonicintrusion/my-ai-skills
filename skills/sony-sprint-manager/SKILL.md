@@ -90,7 +90,52 @@ Once you have the sprint object:
 
 2. Ensure the directory exists.
 
-3. Do not create a sprint-level `work.md` unless the user explicitly asks for one.
+3. Create or update `<sprintDir>/sprint.md` with sprint metadata (see template below).
+   - If the file already exists, update only the frontmatter and **Sprint details** section; preserve any user-written content below.
+
+4. Do not create a sprint-level `work.md` unless the user explicitly asks for one.
+
+### `sprint.md` template
+
+```markdown
+---
+sprint_id: <SPRINT_ID>
+sprint_name: "<SPRINT_NAME>"
+sprint_key: <SPRINT_KEY>
+board_id: <BOARD_ID>
+board_name: "<BOARD_NAME>"
+project_key: <PROJECT_KEY>
+project_id: <PROJECT_ID>
+state: <active|future|closed>
+start_date: <YYYY-MM-DD or empty>
+end_date: <YYYY-MM-DD or empty>
+goal: "<SPRINT_GOAL or empty>"
+jira_sprint_url: https://jira.sie.sony.com/secure/GHViewer.jspa?rapidViewId=<BOARD_ID>&selectedSprintId=<SPRINT_ID>
+synced_at: <ISO-8601 timestamp of when this file was last written>
+---
+
+# Sprint <SPRINT_NAME>
+
+## Sprint details
+
+| Field        | Value                                                                                                             |
+| ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| Sprint ID    | `<SPRINT_ID>`                                                                                                     |
+| Sprint key   | `<SPRINT_KEY>`                                                                                                    |
+| Board        | <BOARD_NAME> (`<BOARD_ID>`)                                                                                       |
+| Project      | <PROJECT_KEY> (`<PROJECT_ID>`)                                                                                    |
+| State        | <active/future/closed>                                                                                            |
+| Start date   | <YYYY-MM-DD>                                                                                                      |
+| End date     | <YYYY-MM-DD>                                                                                                      |
+| Goal         | <SPRINT_GOAL>                                                                                                     |
+| Jira link    | [Open in Jira](https://jira.sie.sony.com/secure/GHViewer.jspa?rapidViewId=<BOARD_ID>&selectedSprintId=<SPRINT_ID>) |
+```
+
+**How to derive `project_key` / `project_id`:**
+
+- REST API path: pull `projectKey` from the first issue returned by the sprint issues endpoint, or call `/rest/api/2/project` and match by board.
+- MCP path: if `jira_get_sprint_issues` returns at least one issue, read `fields.project.key` and `fields.project.id` from the first result. If no issues yet, call `jira_get_agile_boards` and inspect the board's `location.projectKey` / `location.projectId` fields.
+- If the project key cannot be determined, leave the field empty and note `unknown` in the table.
 
 ## Optional next step: pull sprint issues into the workspace
 
