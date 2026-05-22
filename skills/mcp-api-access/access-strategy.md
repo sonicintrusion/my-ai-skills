@@ -122,19 +122,27 @@ service-specific guides below:
 
 REST API calls require a token from the environment:
 
-| Service    | Token variable     | Base URL variable     |
-|------------|--------------------|-----------------------|
-| GitHub     | `GITHUB_TOKEN`     | `GITHUB_API_URL`      |
-| Jira       | `JIRA_TOKEN`       | `JIRA_BASE_URL`       |
-| Confluence | `CONFLUENCE_TOKEN` | `CONFLUENCE_BASE_URL` |
+| Service    | Token variable          | Base URL variable     |
+|------------|-------------------------|-----------------------|
+| GitHub     | `GITHUB_TOKEN`          | `GITHUB_API_URL`      |
+| Jira       | `JIRA_TOKEN`            | `JIRA_BASE_URL`       |
+| Confluence | `CONFLUENCE_TOKEN`      | `CONFLUENCE_BASE_URL` |
+| Jenkins    | `JENKINS_TOKEN_<ALIAS>` | extracted from URL    |
 
 Default base URLs:
 
 - GitHub: `https://github.sie.sony.com/api/v3`
 - Jira: `https://jira.sie.sony.com`
 - Confluence: `https://confluence.sie.sony.com`
+- Jenkins: extracted from the user-provided URL (no fixed default)
 
-If the required token is not set, inform the user:
+**Jenkins token note:** The alias is inferred from the URL hostname (e.g.
+`jenkins-manage.example.com` → `JENKINS_TOKEN_MANAGE`). When no alias can be
+inferred, fall back to `JENKINS_TOKEN_PROD`. Also requires `JENKINS_USER`
+(username, shared across instances). See [Jenkins REST API](jenkins-rest-api.md)
+for full resolution logic.
+
+See [Jenkins REST API](jenkins-rest-api.md) for full token-resolution logic.
 
 > The `<TOKEN>` environment variable is not set. Please set it and retry.
 

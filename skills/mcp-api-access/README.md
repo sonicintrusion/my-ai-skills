@@ -23,6 +23,7 @@ API tokens are used as fallback when MCP is unavailable. Service tokens should f
 - Jira: `JIRA_TOKEN`
 - GitHub: `GITHUB_TOKEN`
 - Confluence: `CONFLUENCE_TOKEN`
+- Jenkins: `JENKINS_TOKEN_<ALIAS>` (one per instance; default falls back to `JENKINS_TOKEN_PROD`)
 - Generic: `<SERVICE_NAME>_TOKEN`
 
 Additional configuration variables:
@@ -30,6 +31,7 @@ Additional configuration variables:
 - `JIRA_BASE_URL` - Base URL for Jira instance (default: `https://jira.sie.sony.com`)
 - `CONFLUENCE_BASE_URL` - Base URL for Confluence instance (default: `https://confluence.sie.sony.com`)
 - `GITHUB_API_URL` - GitHub API URL (default: `https://github.sie.sony.com/api/v3`)
+- `JENKINS_USER` - Jenkins username (shared across instances)
 
 **Note:** MCP is the primary access method. Tokens are only checked if MCP is unavailable.
 
@@ -49,6 +51,7 @@ See the following files for REST API implementation details:
 - [Jira REST API](jira-rest-api.md)
 - [GitHub REST API](github-rest-api.md)
 - [Confluence REST API](confluence-rest-api.md)
+- [Jenkins REST API](jenkins-rest-api.md)
 
 ## Implementation Pattern
 
@@ -137,3 +140,8 @@ To add support for a new service:
 2. Create a REST API guide under `skills/mcp-api-access/<service>-rest-api.md`
 3. Document the API endpoints, authentication, and request/response formats
 4. Update skills that use the service to include the fallback pattern
+
+**Note:** Services with multiple instances (e.g. Jenkins) use per-instance
+tokens named `<SERVICE>_TOKEN_<ALIAS>`. The guide for that service must document
+how to infer the alias from the user-provided URL and which instance token to
+fall back to when no alias matches.

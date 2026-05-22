@@ -6,7 +6,7 @@ This document provides quick examples of how to check which access method will b
 
 ```bash
 # Quick status check
-env | grep -E '(JIRA|GITHUB|CONFLUENCE)_(TOKEN|BASE_URL)'
+env | grep -E '(JIRA|GITHUB|CONFLUENCE)_(TOKEN|BASE_URL)|JENKINS_(TOKEN|USER)'
 ```
 
 ## Test Each Service
@@ -39,6 +39,19 @@ curl -X GET "${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com}/rest/api/us
   -H "Authorization: Bearer ${CONFLUENCE_TOKEN}" \
   -H "Content-Type: application/json" \
   -s | jq -r '.username // "Error"'
+```
+
+### Jenkins
+
+```bash
+# List available Jenkins tokens
+env | grep '^JENKINS_TOKEN_'
+
+# Test Jenkins access (get server info) — substitute your instance URL
+JENKINS_BASE_URL="https://build.randd.bis.sie.sony.com"
+curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN_RANDD}" \
+  "${JENKINS_BASE_URL}/api/json?tree=mode,nodeDescription" \
+  | jq -r '.nodeDescription // "Error"'
 ```
 
 ## Troubleshooting
