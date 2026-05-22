@@ -49,14 +49,27 @@ fi
 
 ## Authentication
 
-Jenkins REST API uses HTTP Basic Authentication with your username and token:
+Jenkins REST API uses HTTP Basic Authentication. The username is taken from the
+local shell variable `$USER`. If `$USER` is empty, ask the user for their
+Jenkins username before proceeding.
 
 ```bash
--u "${JENKINS_USER}:${JENKINS_TOKEN}"
+# Resolve username
+JENKINS_USERNAME="${USER}"
+if [ -z "$JENKINS_USERNAME" ]; then
+  echo "Error: \$USER is not set. Please provide your Jenkins username."
+  exit 1
+fi
 ```
 
-All API calls must include a CSRF crumb unless the instance has CSRF disabled.
-See [CSRF / Crumb](#csrf--crumb) below.
+All API calls use:
+
+```bash
+-u "${USER}:${JENKINS_TOKEN}"
+```
+
+All write operations must also include a CSRF crumb unless the instance has
+CSRF disabled. See [CSRF / Crumb](#csrf--crumb) below.
 
 ## Base URL
 
@@ -76,7 +89,7 @@ Most Jenkins instances require a CSRF crumb header on write operations (POST).
 ### Fetch a crumb
 
 ```bash
-CRUMB=$(curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+CRUMB=$(curl -s -u "${USER}:${JENKINS_TOKEN}" \
   "${JENKINS_BASE_URL}/crumbIssuer/api/json" \
   | jq -r '"\(.crumbRequestField):\(.crumb)"')
 ```
@@ -85,7 +98,7 @@ CRUMB=$(curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
 
 ```bash
 curl -X POST "${JENKINS_BASE_URL}/..." \
-  -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+  -u "${USER}:${JENKINS_TOKEN}" \
   -H "${CRUMB}" \
   ...
 ```
@@ -98,14 +111,14 @@ If the instance returns 404 on `/crumbIssuer`, CSRF is disabled and the
 ### Get server info
 
 ```bash
-curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+curl -s -u "${USER}:${JENKINS_TOKEN}" \
   "${JENKINS_BASE_URL}/api/json" | jq .
 ```
 
 ### List jobs
 
 ```bash
-curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+curl -s -u "${USER}:${JENKINS_TOKEN}" \
   "${JENKINS_BASE_URL}/api/json?tree=jobs[name,url,color]" | jq .
 ```
 
@@ -115,14 +128,14 @@ curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
 # JOB_PATH is the URL path segment(s) after /job/, slash-separated
 # e.g. for https://jenkins.example.com/job/my-folder/job/my-job/
 # JOB_PATH = "my-folder/job/my-job"
-curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+curl -s -u "${USER}:${JENKINS_TOKEN}" \
   "${JENKINS_BASE_URL}/job/${JOB_PATH}/api/json" | jq .
 ```
 
 ### Get last build status
 
 ```bash
-curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+curl -s -u "${USER}:${JENKINS_TOKEN}" \
   "${JENKINS_BASE_URL}/job/${JOB_PATH}/lastBuild/api/json" \
   | jq '{result: .result, building: .building, url: .url, number: .number}'
 ```
@@ -130,19 +143,19 @@ curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
 ### Get specific build info
 
 ```bash
-curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+curl -s -u "${USER}:${JENKINS_TOKEN}" \
   "${JENKINS_BASE_URL}/job/${JOB_PATH}/${BUILD_NUMBER}/api/json" | jq .
 ```
 
 ### Trigger a build (no parameters)
 
 ```bash
-CRUMB=$(curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+CRUMB=$(curl -s -u "${USER}:${JENKINS_TOKEN}" \
   "${JENKINS_BASE_URL}/crumbIssuer/api/json" \
   | jq -r '"\(.crumbRequestField):\(.crumb)"')
 
 curl -X POST "${JENKINS_BASE_URL}/job/${JOB_PATH}/build" \
-  -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+  -u "${USER}:${JENKINS_TOKEN}" \
   -H "${CRUMB}"
 ```
 
@@ -151,12 +164,12 @@ curl -X POST "${JENKINS_BASE_URL}/job/${JOB_PATH}/build" \
 ### Trigger a parameterised build
 
 ```bash
-CRUMB=$(curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+CRUMB=$(curl -s -u "${USER}:${JENKINS_TOKEN}" \
   "${JENKINS_BASE_URL}/crumbIssuer/api/json" \
   | jq -r '"\(.crumbRequestField):\(.crumb)"')
 
 curl -X POST "${JENKINS_BASE_URL}/job/${JOB_PATH}/buildWithParameters" \
-  -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+  -u "${USER}:${JENKINS_TOKEN}" \
   -H "${CRUMB}" \
   --data-urlencode "BRANCH=main" \
   --data-urlencode "DEPLOY_ENV=staging"
@@ -165,7 +178,7 @@ curl -X POST "${JENKINS_BASE_URL}/job/${JOB_PATH}/buildWithParameters" \
 ### Get build console log
 
 ```bash
-curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+curl -s -u "${USER}:${JENKINS_TOKEN}" \
   "${JENKINS_BASE_URL}/job/${JOB_PATH}/${BUILD_NUMBER}/consoleText"
 ```
 
@@ -176,7 +189,7 @@ to find the actual build number once Jenkins schedules the build:
 
 ```bash
 QUEUE_URL="https://jenkins.example.com/queue/item/42/"
-curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+curl -s -u "${USER}:${JENKINS_TOKEN}" \
   "${QUEUE_URL}api/json" \
   | jq '{why: .why, executable: .executable}'
 ```
@@ -186,12 +199,12 @@ When `.executable` is non-null, `.executable.number` is the build number.
 ### Stop a running build
 
 ```bash
-CRUMB=$(curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+CRUMB=$(curl -s -u "${USER}:${JENKINS_TOKEN}" \
   "${JENKINS_BASE_URL}/crumbIssuer/api/json" \
   | jq -r '"\(.crumbRequestField):\(.crumb)"')
 
 curl -X POST "${JENKINS_BASE_URL}/job/${JOB_PATH}/${BUILD_NUMBER}/stop" \
-  -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+  -u "${USER}:${JENKINS_TOKEN}" \
   -H "${CRUMB}"
 ```
 
@@ -200,7 +213,7 @@ curl -X POST "${JENKINS_BASE_URL}/job/${JOB_PATH}/${BUILD_NUMBER}/stop" \
 If the Blue Ocean plugin is installed:
 
 ```bash
-curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+curl -s -u "${USER}:${JENKINS_TOKEN}" \
   "${JENKINS_BASE_URL}/blue/rest/organizations/jenkins/pipelines/${PIPELINE_NAME}/runs/${BUILD_NUMBER}/nodes/" \
   | jq '[.[] | {displayName, result, durationInMillis}]'
 ```
@@ -261,7 +274,7 @@ and expire.
 
 ```bash
 # Re-fetch crumb then retry
-CRUMB=$(curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+CRUMB=$(curl -s -u "${USER}:${JENKINS_TOKEN}" \
   "${JENKINS_BASE_URL}/crumbIssuer/api/json" \
   | jq -r '"\(.crumbRequestField):\(.crumb)"')
 ```
@@ -273,7 +286,7 @@ capture the status code separately:
 
 ```bash
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-  -u "${JENKINS_USER}:${JENKINS_TOKEN}" \
+  -u "${USER}:${JENKINS_TOKEN}" \
   "${JENKINS_BASE_URL}/job/${JOB_PATH}/api/json")
 
 if [ "$HTTP_CODE" != "200" ]; then
@@ -286,8 +299,5 @@ fi
 | Variable | Description | Required |
 |---|---|---|
 | `JENKINS_TOKEN_<ALIAS>` | API token for the named instance | Yes (one per instance) |
-| `JENKINS_USER` | Jenkins username | Yes |
 | `JENKINS_TOKEN_PROD` | Default token when alias cannot be inferred | Yes |
-
-`JENKINS_USER` should be consistent across instances. If usernames differ per
-instance, use `JENKINS_USER_<ALIAS>` and resolve it alongside the token.
+| `USER` | Jenkins username — standard shell variable set automatically | Yes (ask user if unset) |

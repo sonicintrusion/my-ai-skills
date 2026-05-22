@@ -138,9 +138,9 @@ Default base URLs:
 
 **Jenkins token note:** The alias is inferred from the URL hostname (e.g.
 `jenkins-manage.example.com` → `JENKINS_TOKEN_MANAGE`). When no alias can be
-inferred, fall back to `JENKINS_TOKEN_PROD`. Also requires `JENKINS_USER`
-(username, shared across instances). See [Jenkins REST API](jenkins-rest-api.md)
-for full resolution logic.
+inferred, fall back to `JENKINS_TOKEN_PROD`. The username is taken from the
+shell's `$USER` variable; ask the user if it is unset. See
+[Jenkins REST API](jenkins-rest-api.md) for full resolution logic.
 
 See [Jenkins REST API](jenkins-rest-api.md) for full token-resolution logic.
 

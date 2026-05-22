@@ -49,7 +49,7 @@ env | grep '^JENKINS_TOKEN_'
 
 # Test Jenkins access (get server info) — substitute your instance URL
 JENKINS_BASE_URL="https://build.randd.bis.sie.sony.com"
-curl -s -u "${JENKINS_USER}:${JENKINS_TOKEN_RANDD}" \
+curl -s -u "${USER}:${JENKINS_TOKEN_RANDD}" \
   "${JENKINS_BASE_URL}/api/json?tree=mode,nodeDescription" \
   | jq -r '.nodeDescription // "Error"'
 ```

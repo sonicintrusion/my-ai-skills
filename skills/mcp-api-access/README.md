@@ -31,7 +31,7 @@ Additional configuration variables:
 - `JIRA_BASE_URL` - Base URL for Jira instance (default: `https://jira.sie.sony.com`)
 - `CONFLUENCE_BASE_URL` - Base URL for Confluence instance (default: `https://confluence.sie.sony.com`)
 - `GITHUB_API_URL` - GitHub API URL (default: `https://github.sie.sony.com/api/v3`)
-- `JENKINS_USER` - Jenkins username (shared across instances)
+- `USER` - Jenkins username (standard shell variable; ask user if unset)
 
 **Note:** MCP is the primary access method. Tokens are only checked if MCP is unavailable.
 
