@@ -1,7 +1,6 @@
 ---
 name: jira
 description: Interact with Jira tickets. Supports creating, updating, and closing tickets. Use when the user says "update 2965: comment", "close 2965", "create jira ticket", or "update bau: note". Parses ticket IDs, handles BAU tickets specially, and works with both MCP and REST API.
-disable-model-invocation: true
 ---
 
 # Jira Skill

@@ -6,7 +6,6 @@ description: >-
   any uncommitted work, and creates a correctly-named feature branch. Use when
   the user says "ready project", "set up the repo", "start work on TICKET-123",
   "clone and branch", or any request to prepare a local repo before coding.
-disable-model-invocation: true
 ---
 
 # Ready Project

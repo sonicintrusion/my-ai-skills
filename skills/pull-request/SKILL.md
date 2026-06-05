@@ -5,7 +5,6 @@ description: >-
   CI, and merge. Use when the user asks to create a PR, open a pull request,
   update PR title or description, mark ready for review, check PR status, review
   code changes, investigate CI failures, or merge a branch.
-disable-model-invocation: true
 ---
 
 # GitHub Pull Request Skill

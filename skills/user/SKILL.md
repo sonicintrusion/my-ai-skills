@@ -5,7 +5,6 @@ description: >-
   run (shell username, HOME). Use when the user asks who is running the session,
   needs paths under their home, tilde expansion context, or "my user" /
   "this machine's user" for scripts, config, or file locations.
-disable-model-invocation: true
 ---
 
 # Current user context

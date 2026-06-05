@@ -1,7 +1,6 @@
 ---
 name: pillar
 description: Manage pillar workspaces synced with Confluence and Jira. Supports init (bootstrap new pillar), sync (bidirectional sync), and status (quick update). Use when the user says "pillar-init pho", "pillar-sync pho", "pillar-status pho", or similar. Automatically detects operation from user input.
-disable-model-invocation: true
 ---
 
 # Pillar Skill
