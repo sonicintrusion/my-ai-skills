@@ -29,7 +29,11 @@ This skill must work in any IDE and any repository. All paths are **relative to 
 
 Each sprint gets its own subfolder using a short sprint key (e.g. `94-3`): `<sprintsRoot>/<sprintKey>/`
 
-Ticket markdown files live directly inside the sprint subfolder: `<sprintDir>/<ISSUE_KEY>.md`
+Each ticket gets its own subfolder inside the sprint directory: `<sprintDir>/<ISSUE_KEY>/`
+
+The ticket markdown file lives inside the ticket subfolder: `<sprintDir>/<ISSUE_KEY>/<ISSUE_KEY>.md`
+
+Any additional files created for a ticket (diagrams, scripts, specs, etc.) are stored in the same ticket subfolder alongside the markdown file.
 
 ## Mandatory first step: retrieve the current sprint (Jira MCP or REST API)
 
@@ -232,8 +236,10 @@ current sprint:
 
 **For both paths:**
 
-1. For each filtered issue, create a markdown file:
-   - `ticketPath`: `<sprintDir>/<ISSUE_KEY>.md`
+1. For each filtered issue, create a ticket subfolder and markdown file:
+   - `ticketDir`: `<sprintDir>/<ISSUE_KEY>/`
+   - `ticketPath`: `<sprintDir>/<ISSUE_KEY>/<ISSUE_KEY>.md`
+   - Ensure `ticketDir` exists before writing the file.
    - Never overwrite existing content; if the file exists, only update the
      frontmatter/header section (leave user notes intact).
    - Populate **Description** by formatting the returned description as markdown bullets.
@@ -274,6 +280,30 @@ current sprint:
 ## Investigation
 
 -
+```
+
+## Additional files for a ticket
+
+When working on a ticket requires creating files beyond the main markdown
+(e.g. scripts, diagrams, specs, test data, config snippets):
+
+- Always place them inside the ticket's subfolder: `<sprintDir>/<ISSUE_KEY>/`
+- Use descriptive filenames that make the file's purpose clear at a glance.
+- Reference any such files from the ticket's `<ISSUE_KEY>.md` under a
+  `## Artifacts` section so they are discoverable from the markdown.
+
+Example structure:
+
+```text
+sprints/
+  94-3/
+    sprint.md
+    CPT-123/
+      CPT-123.md          ← ticket notes
+      migration-plan.md   ← related spec
+      seed-data.sql       ← related script
+    CPT-124/
+      CPT-124.md
 ```
 
 ## Markdown output quality
