@@ -21,8 +21,8 @@ Follow the rules defined in DavidAnson's `markdownlint` rules reference:
 ## Workflow
 
 1. **Pre-lint review** — check the document against all rules (see below) before invoking Docker.
-1. **Fix** — correct any violations found in step 1.
-1. **Run Docker** — use the Docker command to confirm zero violations.
+2. **Fix** — correct any violations found in step 1.
+3. **Run Docker** — use the Docker command to confirm zero violations.
 
 ---
 
@@ -142,7 +142,7 @@ line up.
 Config is resolved in this priority order (highest first):
 
 1. **Local project config** — `config/markdownlint/.mdlrc` or `.mdlrc` at the repo root.
-1. **Global user config** — `~/.config/markdownlint/.mdlrc` (always mounted at `/global-mdl-config/`).
+2. **Global user config** — `~/.config/markdownlint/.mdlrc` (always mounted at `/global-mdl-config/`).
 
 Always mount the global config into every container run. Then pass `-c` pointing at the local
 config if one exists, or at `/global-mdl-config/.mdlrc` if it does not.

@@ -49,25 +49,25 @@ Intent examples:
 Required behavior:
 
 1. Verify repository state before PR creation.
-1. Check for local changes and ask the user how to handle them:
+2. Check for local changes and ask the user how to handle them:
    - untracked files
    - tracked but uncommitted changes
-1. Confirm there are no outstanding local commits to resolve before push.
-1. Push the working branch to origin.
-1. Build PR title with this exact format:
+3. Confirm there are no outstanding local commits to resolve before push.
+4. Push the working branch to origin.
+5. Build PR title with this exact format:
    - `<TICKET-KEY> - <readable title>`
    - Example branch: `dsosys-3080/fix-dep-e1-30day-monitor`
    - Example PR title: `DSOSYS-3080 - fix: 30 day monitor for DEP-E1 cluster`
-1. Derive `<TICKET-KEY>` from branch or user-provided ticket.
-1. Derive readable title from branch name by converting dashes and
+6. Derive `<TICKET-KEY>` from branch or user-provided ticket.
+7. Derive readable title from branch name by converting dashes and
    abbreviations into clear human text.
-1. Check for a PR template in the repository before building the description.
+8. Check for a PR template in the repository before building the description.
    Look in this order:
    - `.github/pull_request_template.md`
    - `.github/PULL_REQUEST_TEMPLATE/pull_request_template.md`
    - `pull_request_template.md` (repo root)
    Use the first one found. If none exist, skip this step.
-1. Build PR description:
+9. Build PR description:
    - If a template was found, populate each section of the template with
      relevant content (task summary, commit list, test plan, etc.).
      Preserve the template's headings and structure exactly.
@@ -89,12 +89,12 @@ Required behavior:
        - `## Related PRs` — a list of any PRs referenced in commit
          messages, branch names, or ticket links. Leave the section
          heading with a placeholder note if none are found.
-1. Create the PR in draft state.
-1. Ask the user to review the draft PR.
-1. Keep PR in draft until the user asks to mark it ready for review, or they
-   do it themselves.
-1. Return PR number, URL, final title, and description preview.
-1. If the PR is marked ready for review, proceed to Operation 5.
+10. Create the PR in draft state.
+11. Ask the user to review the draft PR.
+12. Keep PR in draft until the user asks to mark it ready for review, or they
+    do it themselves.
+13. Return PR number, URL, final title, and description preview.
+14. If the PR is marked ready for review, proceed to Operation 5.
 
 ### Op 1: gh CLI example
 
@@ -134,8 +134,8 @@ Intent examples:
 Required behavior:
 
 1. Identify PR number.
-1. Apply requested metadata/state changes.
-1. Confirm updated fields and final PR state.
+2. Apply requested metadata/state changes.
+3. Confirm updated fields and final PR state.
 
 State transition rule:
 
@@ -179,8 +179,8 @@ Intent examples:
 Required behavior:
 
 1. Identify PR and target thread/file/line where relevant.
-1. Post review or comment action.
-1. Report thread status and outstanding items.
+2. Post review or comment action.
+3. Report thread status and outstanding items.
 
 ### Op 3: gh CLI examples
 
@@ -216,8 +216,8 @@ Intent examples:
 Required behavior:
 
 1. Collect status checks and review requirements.
-1. Summarize blockers (failed checks, missing approvals, requested changes).
-1. Return merge readiness verdict.
+2. Summarize blockers (failed checks, missing approvals, requested changes).
+3. Return merge readiness verdict.
 
 ### Op 4: gh CLI example
 
@@ -272,20 +272,20 @@ If all jobs passed, report success and stop.
 If any jobs failed or were cancelled:
 
 1. Identify the failing job(s) by name.
-1. Fetch the relevant log output for each failure.
+2. Fetch the relevant log output for each failure.
 
    ```bash
    gh run view {run-id} --log-failed
    # or via MCP: github_get_job_logs with failed_only=true
    ```
 
-1. Analyse the failure — determine whether it is:
+3. Analyse the failure — determine whether it is:
    - a code issue in this PR
    - a flaky or pre-existing failure unrelated to this PR
    - a configuration or environment issue
-1. For failures caused by this PR, suggest the specific changes needed to fix
+4. For failures caused by this PR, suggest the specific changes needed to fix
    them (file paths, what to change, and why).
-1. For failures not caused by this PR, note this clearly so the user can
+5. For failures not caused by this PR, note this clearly so the user can
    decide whether to investigate or proceed.
 
 ---
@@ -309,14 +309,14 @@ Merge strategy rules:
 Required behavior:
 
 1. Verify merge prerequisites.
-1. Execute the merge using squash merge unless the user has explicitly
+2. Execute the merge using squash merge unless the user has explicitly
    requested a merge commit.
-1. Confirm merge result and resulting branch state.
-1. Check for outstanding automations/workflows after merge.
-1. If automation is running, wait until completion.
-1. After automation completes (or if none are running), ask the user whether
+3. Confirm merge result and resulting branch state.
+4. Check for outstanding automations/workflows after merge.
+5. If automation is running, wait until completion.
+6. After automation completes (or if none are running), ask the user whether
    there is any further activity needed.
-1. If no further activity is needed:
+7. If no further activity is needed:
    - update notes
    - close the related ticket
 

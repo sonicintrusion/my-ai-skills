@@ -15,8 +15,8 @@ Hostnames do not always embed a readable alias (e.g.
 1. **Scan available tokens.** List all `JENKINS_TOKEN_*` variables set in the
    environment and check whether any alias appears as a substring of the
    hostname (case-insensitive).
-1. **Fall back to prod.** If no alias matches, use `JENKINS_TOKEN_PROD`.
-1. **Verify the token is set.** If the resolved variable is empty, stop and
+2. **Fall back to prod.** If no alias matches, use `JENKINS_TOKEN_PROD`.
+3. **Verify the token is set.** If the resolved variable is empty, stop and
    ask the user which token to use.
 
 ### Token lookup algorithm

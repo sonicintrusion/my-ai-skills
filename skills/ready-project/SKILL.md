@@ -50,9 +50,9 @@ If no match is found in any known root, ask:
 - **If yes** — note the URL and proceed to Step 2.
 - **If no** — ask the following questions to locate the repo:
   1. What is the name (or partial name) of the repository?
-  1. Is it on the internal GitHub instance (`github.sie.sony.com`) or
+  2. Is it on the internal GitHub instance (`github.sie.sony.com`) or
      `github.com`?
-  1. What org or owner owns the repo?
+  3. What org or owner owns the repo?
 
   Use these answers to construct the clone URL and proceed to Step 2.
 
@@ -196,10 +196,10 @@ When ambiguous, default to `feat` and mention the assumption.
 From the ticket title or user description:
 
 1. Lowercase all words.
-1. Remove articles, conjunctions, and filler words (`a`, `an`, `the`, `for`,
+2. Remove articles, conjunctions, and filler words (`a`, `an`, `the`, `for`,
    `and`, `of`, `to`, `in`, `with`, `on`).
-1. Replace spaces and special characters with hyphens.
-1. Truncate so the full branch name is ≤ 60 characters total.
+3. Replace spaces and special characters with hyphens.
+4. Truncate so the full branch name is ≤ 60 characters total.
 
 Examples:
 

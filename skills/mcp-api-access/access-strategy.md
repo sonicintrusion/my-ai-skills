@@ -7,8 +7,8 @@ order. Each tier is only attempted if the previous tier is unavailable or cannot
 fulfil the request.
 
 1. **Tier 1 — MCP**: Use the configured MCP tool.
-1. **Tier 2 — Shell CLI**: Use the service's dedicated CLI tool.
-1. **Tier 3 — REST API**: Fall back to direct API calls.
+2. **Tier 2 — Shell CLI**: Use the service's dedicated CLI tool.
+3. **Tier 3 — REST API**: Fall back to direct API calls.
 
 Do not skip tiers. If a tier requires authentication, complete that process
 before moving to the next tier.
@@ -28,12 +28,12 @@ If the call succeeds, the task is complete. Do not proceed to Tier 2.
 If the MCP tool responds with an authentication or authorisation error:
 
 1. Extract the auth URL from the MCP response.
-1. Present the URL to the user:
+2. Present the URL to the user:
 
    > MCP requires authentication. Please complete sign-in at: `<auth URL>`
 
-1. Wait for the user to confirm they have completed authentication.
-1. Retry the MCP operation.
+3. Wait for the user to confirm they have completed authentication.
+4. Retry the MCP operation.
 
 If the retry succeeds, the task is complete. Do not proceed to Tier 2.
 
@@ -71,7 +71,7 @@ If no CLI tool is listed for the service, skip directly to Tier 3.
 
    If the tool is not installed, fall through to Tier 3.
 
-1. Verify the CLI tool is authenticated:
+2. Verify the CLI tool is authenticated:
 
    ```bash
    <tool> auth status
@@ -84,14 +84,14 @@ If no CLI tool is listed for the service, skip directly to Tier 3.
       > `<tool>` is not authenticated. Please complete sign-in
       > (e.g. `<tool> auth login`) and confirm when ready.
 
-   1. Wait for the user to confirm authentication is complete.
-   1. Re-run the auth status check.
-   1. Retry the requested operation.
+   2. Wait for the user to confirm authentication is complete.
+   3. Re-run the auth status check.
+   4. Retry the requested operation.
 
    If authentication fails or the tool is still unavailable, fall through to
    Tier 3.
 
-1. Execute the operation using the CLI tool.
+3. Execute the operation using the CLI tool.
 
 If the operation succeeds, the task is complete. Do not proceed to Tier 3.
 
@@ -212,5 +212,5 @@ If all three tiers fail or are unavailable, report:
 When the operation completes, report:
 
 1. Which tier was used (MCP, shell CLI, or REST API).
-1. Whether authentication was required and how it was resolved.
-1. The resulting object(s) created, updated, or fetched.
+2. Whether authentication was required and how it was resolved.
+3. The resulting object(s) created, updated, or fetched.

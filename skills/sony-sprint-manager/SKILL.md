@@ -27,7 +27,7 @@ If Jira MCP calls fail with network/connection errors (or show "server errored" 
 This skill must work in any IDE and any repository. All paths are **relative to the current workspace/repo root**.
 
 1. Determine `workspaceRoot` (the repository root for the current workspace).
-1. Determine `sprintsRoot`:
+2. Determine `sprintsRoot`:
    - If the repo already has a `sprints/` folder at the root, use it.
    - Otherwise, create and use `sprints/` at the root.
 
@@ -53,38 +53,38 @@ See `../mcp-api-access/jira-rest-api.md` for REST API details.
      -H "Authorization: Bearer ${JIRA_TOKEN}"
    ```
 
-1. Select the board (prefer `type == "scrum"` and name contains "sony" or "sonic")
-1. Retrieve the current sprint:
+2. Select the board (prefer `type == "scrum"` and name contains "sony" or "sonic")
+3. Retrieve the current sprint:
 
    ```bash
    curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/agile/1.0/board/${BOARD_ID}/sprint?state=active" \
      -H "Authorization: Bearer ${JIRA_TOKEN}"
    ```
 
-1. If no active sprint, retry with `state=future`
-1. Choose the first returned sprint as "current"
+4. If no active sprint, retry with `state=future`
+5. Choose the first returned sprint as "current"
 
 **If JIRA_TOKEN is not available (MCP path):**
 
 1. Before calling any Jira MCP tool, check its schema/descriptor first
    (whatever mechanism the runtime provides for tool schema inspection).
 
-1. If Jira MCP authentication is required, complete the interactive sign-in flow
+2. If Jira MCP authentication is required, complete the interactive sign-in flow
    and then retry the same Jira call.
 
-1. Fetch candidate boards.
+3. Fetch candidate boards.
    - Call the Jira MCP tool `jira_get_agile_boards` with a name filter if the user
      mentioned one (for example "Sony", "Sonic", or a known team/board name);
      otherwise omit the filter and request up to 100 boards.
 
-1. Select the board.
+4. Select the board.
    - If exactly one board matches, use it.
    - If multiple match, prefer (in order):
       - `type == "scrum"`
       - board name contains "sony" or "sonic" (case-insensitive)
    - If still ambiguous, ask the user to pick the board name/id before proceeding.
 
-1. Retrieve the current sprint.
+5. Retrieve the current sprint.
    - Call `jira_get_sprints_from_board` with `state: "active"` for the selected `boardId`.
    - If no active sprint is returned, retry with `state: "future"` and explain that
      there is no active sprint.
@@ -105,20 +105,20 @@ Once you have the sprint object:
    - `sprintDir`: `<sprintsRoot>/<sprintKey>/`
    - (no `work.md` file)
 
-1. Ensure the directory exists.
+2. Ensure the directory exists.
 
-1. Create or update `<sprintDir>/sprint.md` with sprint metadata (see template below).
+3. Create or update `<sprintDir>/sprint.md` with sprint metadata (see template below).
    - If the file already exists, update the frontmatter, **Sprint details** section,
      and **Sprint tickets** table; preserve any other user-written content below.
 
-1. Populate the **Sprint tickets** table in `sprint.md`:
+4. Populate the **Sprint tickets** table in `sprint.md`:
    - **REST API path:** call the sprint issues endpoint and iterate all returned issues.
    - **MCP path:** call `jira_get_sprint_issues` for the `sprintId` (use default `fields`).
    - For each issue write one row: `| <ISSUE_KEY> | <SUMMARY> | <STATUS> | <ASSIGNEE> |`
    - Link the key to its ticket file when it exists: `[<ISSUE_KEY>](./<ISSUE_KEY>/<ISSUE_KEY>.md)`
    - If the table already exists in the file, replace it in full (it reflects live Jira state).
 
-1. Do not create a sprint-level `work.md` unless the user explicitly asks for one.
+5. Do not create a sprint-level `work.md` unless the user explicitly asks for one.
 
 ### `sprint.md` template
 
@@ -185,8 +185,8 @@ If the user asks to sync issues, or if the workspace file is newly created:
      -H "Authorization: Bearer ${JIRA_TOKEN}"
    ```
 
-1. Parse the JSON response for issues array
-1. Append a section to `work.md`:
+2. Parse the JSON response for issues array
+3. Append a section to `work.md`:
 
 ```markdown
 ## Sprint issues
@@ -197,9 +197,9 @@ If the user asks to sync issues, or if the workspace file is newly created:
 **If JIRA_TOKEN is not available (MCP path):**
 
 1. Check the `jira_get_sprint_issues` schema/descriptor (MANDATORY before calling).
-1. Call `jira_get_sprint_issues` for the `sprintId` (use default `fields`; do not set
+2. Call `jira_get_sprint_issues` for the `sprintId` (use default `fields`; do not set
    `expand` unless requested).
-1. Append a section to `work.md`:
+3. Append a section to `work.md`:
 
 ```markdown
 ## Sprint issues
@@ -225,15 +225,15 @@ current sprint:
      -H "Authorization: Bearer ${JIRA_TOKEN}"
    ```
 
-1. Retrieve sprint issues:
+2. Retrieve sprint issues:
 
    ```bash
    curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/agile/1.0/sprint/${SPRINT_ID}/issue" \
      -H "Authorization: Bearer ${JIRA_TOKEN}"
    ```
 
-1. Filter to issues assigned to the current user (match on accountId)
-1. For each filtered issue, get full details:
+3. Filter to issues assigned to the current user (match on accountId)
+4. For each filtered issue, get full details:
 
    ```bash
    curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISSUE_KEY}?fields=description,comment" \
@@ -243,11 +243,11 @@ current sprint:
 **If JIRA_TOKEN is not available (MCP path):**
 
 1. Get current user identity (use `jira_get_me` if available)
-1. Retrieve sprint issues with `jira_get_sprint_issues`.
-1. Filter to issues assigned to the current user.
+2. Retrieve sprint issues with `jira_get_sprint_issues`.
+3. Filter to issues assigned to the current user.
    - Prefer matching on immutable user identity (e.g. account id) when present;
      fall back to display name/email only if that's all Jira returns.
-1. For each filtered issue, call `jira_get_issue` with `additionalFields: ["description"]`
+4. For each filtered issue, call `jira_get_issue` with `additionalFields: ["description"]`
    for full details
 
 **For both paths:**
@@ -270,7 +270,7 @@ current sprint:
       - If the user already has notes there, append a `**Jira history**` subsection
         rather than overwriting.
 
-1. Use this file template for new files:
+2. Use this file template for new files:
 
 ```markdown
 # <ISSUE_KEY>: <SUMMARY>
