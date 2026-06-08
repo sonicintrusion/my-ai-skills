@@ -1,6 +1,13 @@
 ---
 name: markdownlint
-description: Enforce standard Markdown formatting rules compatible with markdownlint. Use when creating or editing .md files, when the user mentions markdownlint, or when the IDE shows MD### lint errors. Prefer tooling configs under e.g. `config/markdownlint/` with `-c` (mdl/Docker), VS Code `extends`, and explicit CLI `--config`. Validate with Docker (`markdownlint/markdownlint`, bind-mount + `-w` + optional `-c`) when no local CLI is installed. Rules source of truth: markdownlint RULES.md on GitHub (DavidAnson/markdownlint).
+description: >-
+  Enforce standard Markdown formatting rules compatible with markdownlint. Use
+  when creating or editing .md files, when the user mentions markdownlint, or
+  when the IDE shows MD### lint errors. Prefer tooling configs under e.g.
+  `config/markdownlint/` with `-c` (mdl/Docker), VS Code `extends`, and
+  explicit CLI `--config`. Validate with Docker (`markdownlint/markdownlint`,
+  bind-mount + `-w` + optional `-c`) when no local CLI is installed. Rules
+  source of truth: markdownlint RULES.md on GitHub (DavidAnson/markdownlint).
 ---
 
 # Markdownlint formatting

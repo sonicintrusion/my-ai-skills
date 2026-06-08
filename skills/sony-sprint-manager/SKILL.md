@@ -1,6 +1,10 @@
 ---
 name: sony-sprint-manager
-description: Manage sprint work using Jira. Use when the user asks to manage their sprint, start sprint planning, create a sprint work file, or sync sprint context from Jira. First action: retrieve the current active sprint via the Jira MCP and create/update a markdown file under sprints/SPRINT/ in the current workspace.
+description: >-
+  Manage sprint work using Jira. Use when the user asks to manage their sprint,
+  start sprint planning, create a sprint work file, or sync sprint context from
+  Jira. First action: retrieve the current active sprint via the Jira MCP and
+  create/update a markdown file under sprints/SPRINT/ in the current workspace.
 ---
 
 # Sony sprint manager
