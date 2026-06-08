@@ -104,8 +104,15 @@ Once you have the sprint object:
 1. Ensure the directory exists.
 
 1. Create or update `<sprintDir>/sprint.md` with sprint metadata (see template below).
-   - If the file already exists, update only the frontmatter and **Sprint details**
-     section; preserve any user-written content below.
+   - If the file already exists, update the frontmatter, **Sprint details** section,
+     and **Sprint tickets** table; preserve any other user-written content below.
+
+1. Populate the **Sprint tickets** table in `sprint.md`:
+   - **REST API path:** call the sprint issues endpoint and iterate all returned issues.
+   - **MCP path:** call `jira_get_sprint_issues` for the `sprintId` (use default `fields`).
+   - For each issue write one row: `| <ISSUE_KEY> | <SUMMARY> | <STATUS> | <ASSIGNEE> |`
+   - Link the key to its ticket file when it exists: `[<ISSUE_KEY>](./<ISSUE_KEY>/<ISSUE_KEY>.md)`
+   - If the table already exists in the file, replace it in full (it reflects live Jira state).
 
 1. Do not create a sprint-level `work.md` unless the user explicitly asks for one.
 
@@ -143,6 +150,11 @@ synced_at: <ISO-8601 timestamp of when this file was last written>
 | End date   | <YYYY-MM-DD>                                                          |
 | Goal       | <SPRINT_GOAL>                                                         |
 | Jira link  | [Open in Jira](https://jira.sie.sony.com/secure/GHViewer.jspa?rapidViewId=<BOARD_ID>&selectedSprintId=<SPRINT_ID>) |
+
+## Sprint tickets
+
+| Key | Summary | Status | Assignee |
+| --- | ------- | ------ | -------- |
 ```
 
 **How to derive `project_key` / `project_id`:**
