@@ -331,19 +331,36 @@ When working on a ticket requires creating files beyond the main markdown
 - Reference any such files from the ticket's `<ISSUE_KEY>.md` under a
   `## Artifacts` section so they are discoverable from the markdown.
 
+### `conversation.md` — agent chat history
+
+Skills and agents may create a `conversation.md` file inside the ticket subfolder
+to record their chat history for that ticket. Treat it exactly like any other
+artifact file:
+
+- Move it with the ticket folder when carrying over to a new sprint.
+- Reference it in the `## Artifacts` section of `<ISSUE_KEY>.md` when it exists.
+- Do not delete or overwrite it during sprint sync operations.
+
+**Using `conversation.md` as a fallback:** If `<ISSUE_KEY>.md` is missing or its
+content is corrupted/incomplete, read `conversation.md` (if present) to recover
+context — it may contain the last known status, decisions made, and notes from
+prior agent sessions. Use that content to reconstruct or re-populate the ticket
+file rather than starting from scratch.
+
 Example structure (CPT-123 carried over from 94-3 into 94-4):
 
 ```text
 sprints/
   94-3/
-    sprint.md             ← CPT-123 row updated: link → ../94-4/CPT-123/CPT-123.md
+    sprint.md              ← CPT-123 row updated: link → ../94-4/CPT-123/CPT-123.md
   94-4/
     sprint.md
-    CPT-123/              ← moved from 94-3, work notes preserved
+    CPT-123/               ← moved from 94-3, work notes preserved
       CPT-123.md
-      migration-plan.md   ← related spec (moved with the folder)
-      seed-data.sql       ← related script (moved with the folder)
-    CPT-124/              ← new ticket, fresh file
+      conversation.md      ← agent chat history (moved with the folder)
+      migration-plan.md    ← related spec (moved with the folder)
+      seed-data.sql        ← related script (moved with the folder)
+    CPT-124/               ← new ticket, fresh file
       CPT-124.md
 ```
 
