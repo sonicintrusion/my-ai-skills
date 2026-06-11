@@ -252,25 +252,48 @@ current sprint:
 
 **For both paths:**
 
-1. For each filtered issue, create a ticket subfolder and markdown file:
-   - `ticketDir`: `<sprintDir>/<ISSUE_KEY>/`
-   - `ticketPath`: `<sprintDir>/<ISSUE_KEY>/<ISSUE_KEY>.md`
-   - Ensure `ticketDir` exists before writing the file.
-   - Never overwrite existing content; if the file exists, only update the
-     frontmatter/header section (leave user notes intact).
-   - Populate **Description** by formatting the returned description as markdown bullets.
-   - Populate **Notes / Updates** by pulling Jira history:
-      - For REST API: Include comments from the response
-      - For MCP: Use `jira_get_issue` with `additionalFields: ["comment"]`. Optionally
-        include `expand: "changelog"` when useful and not too large. Optionally call
-        `jira_get_worklog` for time log entries.
-      - Write a concise, dated bullet list under **Notes / Updates**.
-      - Always format URLs as proper Markdown links or wrap them in angle brackets
-        (`<...>`) to avoid bare-URL lint failures.
-      - If the user already has notes there, append a `**Jira history**` subsection
-        rather than overwriting.
+### Carried-over ticket detection (scan all previous sprints)
 
-2. Use this file template for new files:
+Before creating any ticket file, check whether it already exists in a previous sprint:
+
+1. List all subdirectories of `<sprintsRoot>/` **except** the current `<sprintKey>` folder.
+2. For each previous sprint folder (scan all of them, not just the most recent),
+   check whether `<prevSprintDir>/<ISSUE_KEY>/` exists.
+3. Take the match from the **most recent** previous sprint if the same ticket
+   appears in more than one (this means it was carried over multiple times).
+
+**If a previous folder is found for `<ISSUE_KEY>`:**
+
+1. Move the entire ticket subfolder into the current sprint:
+
+   ```bash
+   mv <prevSprintDir>/<ISSUE_KEY>/ <sprintDir>/<ISSUE_KEY>/
+   ```
+
+2. In the previous sprint's `sprint.md`, update the link for that ticket in the
+   **Sprint tickets** table to point forward to its new location:
+
+   - Replace the plain key or old relative link with:
+     `[<ISSUE_KEY>](../<sprintKey>/<ISSUE_KEY>/<ISSUE_KEY>.md) _(moved to <sprintKey>)_`
+
+3. After moving, update the ticket file's `## Status` section to reflect the
+   current Jira status (do not overwrite user notes below that section).
+
+**If no previous folder exists for `<ISSUE_KEY>`** (genuinely new ticket):
+
+- Create a fresh ticket subfolder and markdown file as normal (see template below).
+- Ensure `ticketDir` exists before writing.
+- Populate **Description** by formatting the returned description as markdown bullets.
+- Populate **Notes / Updates** by pulling Jira history:
+   - For REST API: Include comments from the response.
+   - For MCP: Use `jira_get_issue` with `additionalFields: ["comment"]`. Optionally
+     include `expand: "changelog"` when useful and not too large. Optionally call
+     `jira_get_worklog` for time log entries.
+   - Write a concise, dated bullet list under **Notes / Updates**.
+   - Always format URLs as proper Markdown links or wrap them in angle brackets
+     (`<...>`) to avoid bare-URL lint failures.
+
+### New ticket file template
 
 ```markdown
 # <ISSUE_KEY>: <SUMMARY>
@@ -308,17 +331,19 @@ When working on a ticket requires creating files beyond the main markdown
 - Reference any such files from the ticket's `<ISSUE_KEY>.md` under a
   `## Artifacts` section so they are discoverable from the markdown.
 
-Example structure:
+Example structure (CPT-123 carried over from 94-3 into 94-4):
 
 ```text
 sprints/
   94-3/
+    sprint.md             ← CPT-123 row updated: link → ../94-4/CPT-123/CPT-123.md
+  94-4/
     sprint.md
-    CPT-123/
-      CPT-123.md          ← ticket notes
-      migration-plan.md   ← related spec
-      seed-data.sql       ← related script
-    CPT-124/
+    CPT-123/              ← moved from 94-3, work notes preserved
+      CPT-123.md
+      migration-plan.md   ← related spec (moved with the folder)
+      seed-data.sql       ← related script (moved with the folder)
+    CPT-124/              ← new ticket, fresh file
       CPT-124.md
 ```
 
