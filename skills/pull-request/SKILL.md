@@ -1,10 +1,12 @@
 ---
 name: pull-request
 description: >-
-  Manage the full GitHub pull request lifecycle: create, update, review, check
-  CI, and merge. Use when the user asks to create a PR, open a pull request,
-  update PR title or description, mark ready for review, check PR status, review
-  code changes, investigate CI failures, or merge a branch.
+  Manage the full GitHub pull request lifecycle: create, update, submit review
+  comments or decisions, check CI, and merge. Use when the user asks to create a
+  PR, open a pull request, update PR title or description, mark ready for
+  review, check PR status, approve, request changes, respond to review threads,
+  investigate CI failures, or merge a branch. For a substantive code-quality PR
+  review, use the pr-review skill.
 ---
 
 # GitHub Pull Request Skill
@@ -175,6 +177,10 @@ Intent examples:
 - request changes
 - approve PR
 - respond to review threads
+
+For a substantive code-quality review with CI, tests, examples, documentation,
+and maintainability assessment, use the `pr-review` skill. This operation is
+for submitting or responding to PR review actions.
 
 Required behavior:
 
