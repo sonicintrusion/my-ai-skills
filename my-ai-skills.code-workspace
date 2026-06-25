@@ -1,13 +1,16 @@
 {
 	"folders": [
     {
+      "name": "my-ai-skills",
       "path": "."
     },
     {
+      "name": "ai-skills",
       "path": "../ai-skills"
     },
     {
-      "path": "/Users/KNguyen/dev/sie/github/d-data-platform/ai-toolkit"
+      "name": "ai-toolkit",
+      "path": "../../../sie/github/d-data-platform/ai-toolkit"
     }
   ],
   "settings": {}
