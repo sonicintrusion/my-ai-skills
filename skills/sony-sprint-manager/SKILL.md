@@ -33,11 +33,36 @@ This skill must work in any IDE and any repository. All paths are **relative to 
 
 Each sprint gets its own subfolder using a short sprint key (e.g. `94-3`): `<sprintsRoot>/<sprintKey>/`
 
+Only **active and future** sprints live directly under `<sprintsRoot>/`. Closed sprints are moved to the archive:
+
+- Active/future: `<sprintsRoot>/<sprintKey>/`
+- Closed: `<sprintsRoot>/archive/<sprintKey>/`
+- Archive index: `<sprintsRoot>/archive/index.md`
+
 Each ticket gets its own subfolder inside the sprint directory: `<sprintDir>/<ISSUE_KEY>/`
 
 The ticket markdown file lives inside the ticket subfolder: `<sprintDir>/<ISSUE_KEY>/<ISSUE_KEY>.md`
 
 Any additional files created for a ticket (diagrams, scripts, specs, etc.) are stored in the same ticket subfolder alongside the markdown file.
+
+## Step 0: auto-archive closed sprints
+
+Before doing anything else, scan `<sprintsRoot>/` for sprint folders that belong in the archive.
+
+1. For each subdirectory of `<sprintsRoot>/` that is **not** `archive/`:
+   - Read its `sprint.md` frontmatter.
+   - If `state: closed` (or if the `end_date` is in the past and the sprint is no longer active in Jira), the sprint is closed.
+2. For each closed sprint found:
+   - Ensure `<sprintsRoot>/archive/` exists.
+   - Move the entire sprint folder:
+
+     ```bash
+     mv <sprintsRoot>/<sprintKey>/ <sprintsRoot>/archive/<sprintKey>/
+     ```
+
+   - Update `<sprintsRoot>/archive/index.md` (see **Archive index** section below).
+3. If no sprint.md exists in a top-level subfolder (e.g. it was manually created), leave it in place — do not move unknown folders.
+4. Report to the user how many sprints were archived (or "no sprints archived" if none).
 
 ## Mandatory first step: retrieve the current sprint (Jira MCP or REST API)
 
@@ -252,12 +277,14 @@ current sprint:
 
 **For both paths:**
 
-### Carried-over ticket detection (scan all previous sprints)
+### Carried-over ticket detection (scan all previous sprints, including archive)
 
 Before creating any ticket file, check whether it already exists in a previous sprint:
 
-1. List all subdirectories of `<sprintsRoot>/` **except** the current `<sprintKey>` folder.
-2. For each previous sprint folder (scan all of them, not just the most recent),
+1. Build the full list of candidate sprint directories:
+   - All subdirectories of `<sprintsRoot>/` **except** `archive/` and the current `<sprintKey>` folder.
+   - All subdirectories of `<sprintsRoot>/archive/`.
+2. For each candidate directory (scan all of them, not just the most recent),
    check whether `<prevSprintDir>/<ISSUE_KEY>/` exists.
 3. Take the match from the **most recent** previous sprint if the same ticket
    appears in more than one (this means it was carried over multiple times).
@@ -270,14 +297,10 @@ Before creating any ticket file, check whether it already exists in a previous s
    mv <prevSprintDir>/<ISSUE_KEY>/ <sprintDir>/<ISSUE_KEY>/
    ```
 
-2. In the previous sprint's `sprint.md`, update the link for that ticket in the
-   **Sprint tickets** table to point forward to its new location:
-
-   - Replace the plain key or old relative link with:
-     `[<ISSUE_KEY>](../<sprintKey>/<ISSUE_KEY>/<ISSUE_KEY>.md) _(moved to <sprintKey>)_`
-
-3. After moving, update the ticket file's `## Status` section to reflect the
+2. After moving, update the ticket file's `## Status` section to reflect the
    current Jira status (do not overwrite user notes below that section).
+3. Do not update the old sprint's `sprint.md` — the archive index and the current
+   sprint's ticket table are the authoritative navigation points.
 
 **If no previous folder exists for `<ISSUE_KEY>`** (genuinely new ticket):
 
@@ -347,22 +370,47 @@ context — it may contain the last known status, decisions made, and notes from
 prior agent sessions. Use that content to reconstruct or re-populate the ticket
 file rather than starting from scratch.
 
-Example structure (CPT-123 carried over from 94-3 into 94-4):
+Example structure (CPT-123 carried over from 94-3 into 94-4, with 94-3 closed and archived):
 
 ```text
 sprints/
-  94-3/
-    sprint.md              ← CPT-123 row updated: link → ../94-4/CPT-123/CPT-123.md
-  94-4/
+  archive/
+    index.md               ← one row per archived sprint
+    94-3/
+      sprint.md
+      CPT-121/
+        CPT-121.md
+  95-1/
     sprint.md
-    CPT-123/               ← moved from 94-3, work notes preserved
+    CPT-123/               ← moved from archive/94-3, work notes preserved
       CPT-123.md
-      conversation.md      ← agent chat history (moved with the folder)
-      migration-plan.md    ← related spec (moved with the folder)
-      seed-data.sql        ← related script (moved with the folder)
+      conversation.md
+      migration-plan.md
+      seed-data.sql
     CPT-124/               ← new ticket, fresh file
       CPT-124.md
 ```
+
+## Archive index
+
+`<sprintsRoot>/archive/index.md` is a lightweight index of all archived sprints. Create it when the first sprint is archived; update it each time a sprint is moved to archive.
+
+### Format
+
+```markdown
+# Sprint archive
+
+| Sprint key | Sprint name | Start date | End date | Folder |
+| ---------- | ----------- | ---------- | -------- | ------ |
+| 94-3 | Sony Sprint 94.3 | 2024-01-15 | 2024-01-28 | [94-3](./94-3/sprint.md) |
+```
+
+### Rules
+
+- One row per archived sprint, sorted by `end_date` descending (most recent first).
+- The **Folder** column links to the sprint's `sprint.md` inside the archive.
+- When adding a new row, insert it at the top of the table (after the header).
+- Do not remove rows from this index — it is the permanent history of past sprints.
 
 ## Markdown output quality
 
