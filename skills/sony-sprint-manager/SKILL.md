@@ -139,7 +139,12 @@ Once you have the sprint object:
 4. Populate the **Sprint tickets** table in `sprint.md`:
    - **REST API path:** call the sprint issues endpoint and iterate all returned issues.
    - **MCP path:** call `jira_get_sprint_issues` for the `sprintId` (use default `fields`).
-   - For each issue write one row: `| <ISSUE_KEY> | <SUMMARY> | <STATUS> | <ASSIGNEE> |`
+   - **Filter to the current user only** — include only issues where `assignee` matches
+     the authenticated user (match on account id / key; fall back to display name).
+     Do not include tickets assigned to other team members.
+   - For each matching issue write one row: `| <ISSUE_KEY> | <SUMMARY> | <STATUS> |`
+     (no Assignee column — all rows are always the current user's tickets).
+   - Sort rows: active/in-progress tickets first, then closed tickets.
    - Link the key to its ticket file when it exists: `[<ISSUE_KEY>](./<ISSUE_KEY>/<ISSUE_KEY>.md)`
    - If the table already exists in the file, replace it in full (it reflects live Jira state).
 
@@ -182,8 +187,10 @@ synced_at: <ISO-8601 timestamp of when this file was last written>
 
 ## Sprint tickets
 
-| Key | Summary | Status | Assignee |
-| --- | ------- | ------ | -------- |
+<current user>-owned tickets only. Synced <YYYY-MM-DD>.
+
+| Key | Summary | Status |
+| --- | ------- | ------ |
 ```
 
 **How to derive `project_key` / `project_id`:**
