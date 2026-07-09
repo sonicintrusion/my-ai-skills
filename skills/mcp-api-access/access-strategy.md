@@ -28,14 +28,19 @@ If the call succeeds, the task is complete. Do not proceed to Tier 2.
 If the MCP tool responds with an authentication or authorisation error:
 
 1. Extract the auth URL from the MCP response.
-2. Present the URL to the user:
+2. Open it automatically in Google Chrome Dev:
 
-   > MCP requires authentication. Please complete sign-in at: `<auth URL>`
+   ```bash
+   open -a "Google Chrome Dev" "<auth URL>"
+   ```
 
-3. Wait for the user to confirm they have completed authentication.
-4. Retry the MCP operation.
+3. Wait approximately 30 seconds for the auth process to complete.
+4. Retry the MCP operation automatically — do not prompt the user first.
+5. If the retry succeeds, the task is complete. Do not proceed to Tier 2.
+6. If the retry still fails, inform the user that the auth page was opened and
+   ask them to confirm when authentication is complete, then retry once more.
 
-If the retry succeeds, the task is complete. Do not proceed to Tier 2.
+If the final retry succeeds, the task is complete. Do not proceed to Tier 2.
 
 ### When to fall through from Tier 1
 
