@@ -21,10 +21,10 @@ and split-tunnel routing in parallel, and report a combined result.
 
 Check that the VPN is connected before proceeding with any other steps.
 
-### 1a — Ping internal host
+### 1a — Curl internal host
 
 ```bash
-ping -c 1 -t 3 jira.sie.sony.com > /dev/null 2>&1 && echo "VPN_OK" || echo "VPN_FAIL"
+curl -s -o /dev/null -w "%{http_code}" --max-time 3 https://jira.sie.sony.com | grep -q "^[0-9]" && echo "VPN_OK" || echo "VPN_FAIL"
 ```
 
 ### 1b — Handle result
@@ -70,23 +70,30 @@ all Sony AWS profiles non-interactively. The command may take 10–30 seconds.
 
 ---
 
-### Task B: Reconnect Claude MCP Servers
+### Task B: Verify MCP Server Configuration
 
-Run the reconnect command for each configured MCP server in sequence:
+Run the list command to confirm all expected MCP servers are registered:
 
 ```bash
-claude mcp reconnect sie-jira-mcp
-claude mcp reconnect sie-github-mcp
-claude mcp reconnect sie-confluence-mcp
+claude mcp list
 ```
 
-**Result handling for each server:**
+Check that all three servers appear in the output:
 
-- **Success** — record as connected.
-- **Auth error** — attempt the MCP auth flow: extract the URL, open it in
-  Google Chrome Dev (`open -a "Google Chrome Dev" "<url>"`), wait ~30s,
-  retry once automatically.
-- **Other error** — record as failed with reason, continue to the next server.
+- `sie-jira-mcp`
+- `sie-github-mcp`
+- `sie-confluence-mcp`
+
+**Result handling:**
+
+- **All three present** — record as `OK`.
+- **Any missing** — record as `MISSING: <server-name>` and include in the final report.
+
+After reporting, instruct the user:
+
+> MCP servers connect and authenticate on first use in each session. If a
+> server fails with an auth error during the session, run `/mcp` in the Claude
+> Code chat to see server status and follow any auth prompts that appear.
 
 ---
 
@@ -122,7 +129,7 @@ Morning startup complete.
 
   VPN:            Connected
   AWS (toka):     OK
-  MCP servers:    3/3 connected
+  MCP servers:    3/3 configured
   Split-tunnel:   Routes configured
 
 Ready.
@@ -141,7 +148,7 @@ the user chose to continue, mark that step as `FAILED` in the summary.
 | `toka` not found | Report "`toka` alias not found — check shell profile" |
 | toka fails | Report error, ask user whether to continue |
 | `claude` CLI not found | Report "claude CLI not found — check PATH" |
-| MCP auth error | Open auth URL in Chrome Dev, wait 30s, retry |
-| MCP network error | Note as failed, continue with next server |
+| MCP server missing from list | Report as missing, remind user to re-add with `claude mcp add` |
+| MCP auth error during session | Instruct user to run `/mcp` in chat to see status and auth |
 | vpn-split-tunnel.bash not found | Report path not found, skip Step 4 |
 | Split-tunnel fails | Report error, offer retry with `mobile` or `direct` mode |
