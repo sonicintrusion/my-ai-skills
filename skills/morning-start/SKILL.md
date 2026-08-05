@@ -221,22 +221,23 @@ For each, record the page title and last-modified date.
 ### Task G: Slack Unread Count
 
 Use the `sie-slack-mcp` MCP server to fetch the total number of unread messages
-across all channels.
+across non-muted channels.
 
-**Step 1:** Get the full channel list.
+**Step 1:** Get the full channel list with full metadata.
 
 ```text
-list_my_channels()
+list_my_channels(output="full")
 ```
 
-**Step 2:** For each channel returned, fetch its unread messages.
+**Step 2:** Filter out any channel where `is_muted: true`. Only fetch unreads
+for non-muted channels.
 
 ```text
 get_channel_unreads(channel=<channel_id>)
 ```
 
-Sum the message counts across all channels to produce a total. Track how many
-channels have at least one unread message to report the channel count.
+Sum the message counts across non-muted channels to produce a total. Track how
+many channels have at least one unread message to report the channel count.
 
 **Result handling:**
 
