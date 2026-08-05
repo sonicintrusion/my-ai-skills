@@ -218,31 +218,19 @@ For each, record the page title and last-modified date.
 - **Auth error** — follow the MCP-first auth strategy.
 - **Other error** — record as `FAILED: <error>`.
 
-### Task G: Slack Unread Count
+### Task G: Slack Mentions Check
 
-Use the `sie-slack-mcp` MCP server to fetch the total number of unread messages
-across non-muted channels.
-
-**Step 1:** Get the full channel list with full metadata.
+Use the `sie-slack-mcp` MCP server to verify Slack connectivity and check for
+any @mentions in the last 24 hours.
 
 ```text
-list_my_channels(output="full")
+list_mentions(since="1d", count=20)
 ```
-
-**Step 2:** Filter out any channel where `is_muted: true`. Only fetch unreads
-for non-muted channels.
-
-```text
-get_channel_unreads(channel=<channel_id>)
-```
-
-Sum the message counts across non-muted channels to produce a total. Track how
-many channels have at least one unread message to report the channel count.
 
 **Result handling:**
 
-- **Success** — record as `OK: <N> unread messages across <M> channels`.
-- **Zero unreads** — record as `OK: no unread messages`.
+- **Mentions found** — record as `OK: <N> mention(s) in the last 24h`.
+- **No mentions** — record as `OK: no mentions in the last 24h`.
 - **Auth error** — follow the MCP-first auth strategy: extract the auth URL,
   open it in Chrome Dev, wait 30 seconds, then retry once.
 - **Other error** — record as `FAILED: <error>`.
@@ -303,7 +291,7 @@ Morning startup complete.
   Jira:                 OK: DPS-123 - Some ticket (2026-07-20)
   Confluence (DSOSYS):  OK: "Overview" last updated 2026-07-22
   Confluence (Pillar):  OK: "Pillar Roadmap - Platform Health O11y" last updated 2026-07-21
-  Slack:                OK: 12 unread messages across 4 channels
+  Slack:                OK: no mentions in the last 24h
   ServiceNow:           OK: 3 unresolved incidents
 
 Ready.
@@ -333,6 +321,6 @@ the user chose to continue, mark that step as `FAILED` in the summary.
 | Confluence MCP auth error | Open auth URL in Chrome Dev, wait 30 s, retry once |
 | Confluence page not found | Record as `FAILED: page not found` in summary |
 | Slack MCP auth error | Open auth URL in Chrome Dev, wait 30 s, retry once |
-| Slack returns no channels | Record as `OK: no unread messages` — not a failure |
+| Slack returns no mentions | Record as `OK: no mentions in the last 24h` — not a failure |
 | ServiceNow MCP auth error | Open auth URL in Chrome Dev, wait 30 s, retry once |
 | ServiceNow returns no results | Record as `OK: no unresolved incidents` — not a failure |
