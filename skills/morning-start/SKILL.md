@@ -132,6 +132,28 @@ Once Step 2 is complete, launch all five checks **in parallel** using MCP tools:
 
 Collect all results before proceeding to Step 4 (Final Report).
 
+### Auth error handling (applies to all Step 3 tasks)
+
+When any MCP call returns an auth error:
+
+1. Extract the auth URL from the error response.
+2. Open it automatically — **do not prompt the user**:
+
+   ```bash
+   open -a "Google Chrome Dev" "<auth-url>"
+   ```
+
+3. Wait 20 seconds without interrupting the user:
+
+   ```bash
+   sleep 20
+   ```
+
+4. Retry the call once.
+5. **Retry succeeds** — record as `OK` and continue.
+6. **Retry fails** — record as `AUTH_FAILED: <server-name>` and include in
+   the final report. Do not prompt the user at this point.
+
 ---
 
 ### Task D: GitHub Access Check
@@ -156,8 +178,7 @@ For each, record the most recent commit's short SHA, author, and date.
 **Result handling:**
 
 - **Success** — record as `OK: <sha> by <author> on <date>`.
-- **Auth error** — follow the MCP-first auth strategy: extract the auth URL,
-  open it in Chrome Dev, wait 30 seconds, then retry once.
+- **Auth error** — follow Step 3 auth policy above.
 - **Other error** — record as `FAILED: <error>`.
 
 ---
@@ -186,8 +207,7 @@ Record the issue key, summary, and creation date of the top result.
 **Result handling:**
 
 - **Success** — record as `OK: <issue-key> - <summary> (<date>)`.
-- **Auth error** — follow the MCP-first auth strategy (open auth URL in Chrome
-  Dev, wait 30 s, retry).
+- **Auth error** — follow Step 3 auth policy above.
 - **No results** — record as `OK: no issues found`.
 - **Other error** — record as `FAILED: <error>`.
 
@@ -215,7 +235,7 @@ For each, record the page title and last-modified date.
 **Result handling:**
 
 - **Success** — record as `OK: "<title>" last updated <date>`.
-- **Auth error** — follow the MCP-first auth strategy.
+- **Auth error** — follow Step 3 auth policy above.
 - **Other error** — record as `FAILED: <error>`.
 
 ### Task G: Slack Mentions Check
@@ -231,8 +251,7 @@ list_mentions(since="1d", count=20)
 
 - **Mentions found** — record as `OK: <N> mention(s) in the last 24h`.
 - **No mentions** — record as `OK: no mentions in the last 24h`.
-- **Auth error** — follow the MCP-first auth strategy: extract the auth URL,
-  open it in Chrome Dev, wait 30 seconds, then retry once.
+- **Auth error** — follow Step 3 auth policy above.
 - **Other error** — record as `FAILED: <error>`.
 
 ---
@@ -268,8 +287,7 @@ tickets are counted. Count the returned records.
 
 - **Success** — record as `OK: <N> unresolved incidents`.
 - **Zero results** — record as `OK: no unresolved incidents`.
-- **Auth error** — follow the MCP-first auth strategy: extract the auth URL,
-  open it in Chrome Dev, wait 30 seconds, then retry once.
+- **Auth error** — follow Step 3 auth policy above.
 - **Other error** — record as `FAILED: <error>`.
 
 ---
@@ -311,16 +329,12 @@ the user chose to continue, mark that step as `FAILED` in the summary.
 | toka fails | Report error, ask user whether to continue |
 | `claude` CLI not found | Report "claude CLI not found — check PATH" |
 | MCP server missing from list | Report as missing, remind user to re-add with `claude mcp add` |
-| MCP auth error during session | Instruct user to run `/mcp` in chat to see status and auth |
 | vpn-split-tunnel.bash not found | Report path not found, skip split-tunnel step |
 | Split-tunnel fails | Report error, offer retry with `mobile` or `direct` mode |
-| GitHub MCP auth error | Open auth URL in Chrome Dev, wait 30 s, retry once |
+| Any MCP auth error (Step 3) | Auto: open auth URL in Chrome Dev, `sleep 20`, retry once — no user prompt |
+| MCP auth still fails after retry | Record as `AUTH_FAILED: <server>` in summary |
 | GitHub repo not found / access denied | Record as `FAILED: <error>` in summary |
-| Jira MCP auth error | Open auth URL in Chrome Dev, wait 30 s, retry once |
 | Jira returns no results | Record as `OK: no issues found` — not a failure |
-| Confluence MCP auth error | Open auth URL in Chrome Dev, wait 30 s, retry once |
 | Confluence page not found | Record as `FAILED: page not found` in summary |
-| Slack MCP auth error | Open auth URL in Chrome Dev, wait 30 s, retry once |
 | Slack returns no mentions | Record as `OK: no mentions in the last 24h` — not a failure |
-| ServiceNow MCP auth error | Open auth URL in Chrome Dev, wait 30 s, retry once |
 | ServiceNow returns no results | Record as `OK: no unresolved incidents` — not a failure |
