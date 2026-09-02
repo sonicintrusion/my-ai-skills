@@ -41,12 +41,13 @@ curl -s -o /dev/null -w "%{http_code}" --max-time 3 https://jira.sie.sony.com | 
 
 ## Step 2: Parallel Startup Tasks
 
-Once VPN is confirmed, launch all three tasks **in parallel** (do not wait for
+Once VPN is confirmed, launch all four tasks **in parallel** (do not wait for
 one before starting the next):
 
 - **Task A** — AWS login via toka
 - **Task B** — MCP server reconnect
 - **Task C** — Split-tunnel routing
+- **Task D** — Homebrew update
 
 Collect all results before proceeding to Step 3 (Final Report).
 
@@ -117,6 +118,28 @@ Run without arguments (uses the default router `192.168.12.1`).
   # or
   ~/dev/sonic/github/bunch-o-scripts/vpn-split-tunnel.bash direct
   ```
+
+---
+
+### Task D: Homebrew Update
+
+Run the brew update script to keep packages current.
+
+```bash
+~/dev/sonic/github/bunch-o-scripts/brew_update.sh
+```
+
+Runs `brew update && brew upgrade && brew autoremove && brew cleanup` with
+`HOMEBREW_NO_INTERACTIVE=1` to suppress prompts and proceed non-interactively.
+This may take a few minutes depending on how many packages need updating. Run in
+background so it does not block the parallel phase from completing.
+
+**Result handling:**
+
+- **Exit 0** — the script prints `Homebrew OK: N package(s) upgraded` followed
+  by the list of upgraded packages. Record as `OK: N package(s) upgraded`.
+- **Non-zero exit** — falls back to `brew doctor`; record result as
+  `FAILED: <error>`.
 
 ---
 
@@ -303,6 +326,7 @@ Morning startup complete.
   AWS (toka):           OK
   MCP servers:          3/3 configured
   Split-tunnel:         Routes configured
+  Homebrew:             OK
 
   GitHub (bis):         OK: abc1234 by author on 2026-07-22
   GitHub (data-platform): OK: def5678 by author on 2026-07-21
@@ -330,6 +354,8 @@ the user chose to continue, mark that step as `FAILED` in the summary.
 | `claude` CLI not found | Report "claude CLI not found — check PATH" |
 | MCP server missing from list | Report as missing, remind user to re-add with `claude mcp add` |
 | vpn-split-tunnel.bash not found | Report path not found, skip split-tunnel step |
+| brew_update.sh not found | Report path not found, skip Homebrew step |
+| Homebrew update fails | Record `FAILED: <error>` in summary |
 | Split-tunnel fails | Report error, offer retry with `mobile` or `direct` mode |
 | Any MCP auth error (Step 3) | Auto: open auth URL in Chrome Dev, `sleep 20`, retry once — no user prompt |
 | MCP auth still fails after retry | Record as `AUTH_FAILED: <server>` in summary |
