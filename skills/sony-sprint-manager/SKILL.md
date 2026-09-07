@@ -265,12 +265,16 @@ current sprint:
    ```
 
 3. Filter to issues assigned to the current user (match on accountId)
-4. For each filtered issue, get full details:
+4. For each filtered issue, get full details (including User Story field):
 
    ```bash
-   curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISSUE_KEY}?fields=description,comment" \
+   curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/issue/${ISSUE_KEY}?fields=description,comment,customfield_10940" \
      -H "Authorization: Bearer ${JIRA_TOKEN}"
    ```
+
+   If `customfield_10940` returns null or is absent, call
+   `GET /rest/api/2/field` and search for a field named "User Story" to confirm
+   the correct field ID, then retry.
 
 **If JIRA_TOKEN is not available (MCP path):**
 
@@ -279,8 +283,11 @@ current sprint:
 3. Filter to issues assigned to the current user.
    - Prefer matching on immutable user identity (e.g. account id) when present;
      fall back to display name/email only if that's all Jira returns.
-4. For each filtered issue, call `jira_get_issue` with `additionalFields: ["description"]`
-   for full details
+4. For each filtered issue, call `jira_get_issue` with
+   `additionalFields: ["description", "customfield_10940"]` for full details.
+   `customfield_10940` is the **User Story** field — if this returns empty, use
+   `jira_search_fields` with `keyword: "user story"` to confirm the correct field ID
+   for this Jira instance and retry.
 
 **For both paths:**
 
@@ -333,6 +340,10 @@ Before creating any ticket file, check whether it already exists in a previous s
 - Jira status:
 - Assignee:
 - Jira: [<ISSUE_KEY>](https://jira.sie.sony.com/browse/<ISSUE_KEY>)
+
+## User Story
+
+<USER_STORY content, or "N/A" if not set>
 
 ## Description
 
