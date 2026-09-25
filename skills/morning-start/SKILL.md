@@ -136,8 +136,11 @@ background so it does not block the parallel phase from completing.
 
 **Result handling:**
 
-- **Exit 0** — the script prints `Homebrew OK: N package(s) upgraded` followed
-  by the list of upgraded packages. Record as `OK: N package(s) upgraded`.
+- **Exit 0, no `CLAUDE_PENDING` line** — record as `OK: N package(s) upgraded`.
+- **Exit 0, `CLAUDE_PENDING` line present** — record as
+  `OK: N package(s) upgraded` and include a note:
+  > ⚠️ `claude-code` has an update available. Run `brew upgrade claude-code`
+  > after restarting your session to avoid breaking a live session.
 - **Non-zero exit** — falls back to `brew doctor`; record result as
   `FAILED: <error>`.
 
@@ -326,7 +329,7 @@ Morning startup complete.
   AWS (toka):           OK
   MCP servers:          3/3 configured
   Split-tunnel:         Routes configured
-  Homebrew:             OK
+  Homebrew:             OK (claude-code update pending — see note below)
 
   GitHub (bis):         OK: abc1234 by author on 2026-07-22
   GitHub (data-platform): OK: def5678 by author on 2026-07-21
@@ -356,6 +359,7 @@ the user chose to continue, mark that step as `FAILED` in the summary.
 | vpn-split-tunnel.bash not found | Report path not found, skip split-tunnel step |
 | brew_update.sh not found | Report path not found, skip Homebrew step |
 | Homebrew update fails | Record `FAILED: <error>` in summary |
+| `CLAUDE_PENDING` in brew output | Record `OK` but surface note: "claude-code update available — run `brew upgrade claude-code` after restarting session" |
 | Split-tunnel fails | Report error, offer retry with `mobile` or `direct` mode |
 | Any MCP auth error (Step 3) | Auto: open auth URL in Chrome Dev, `sleep 20`, retry once — no user prompt |
 | MCP auth still fails after retry | Record as `AUTH_FAILED: <server>` in summary |
