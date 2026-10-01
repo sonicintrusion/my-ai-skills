@@ -160,6 +160,15 @@ Collect all results before proceeding to Step 4 (Final Report).
 
 ### Auth error handling (applies to all Step 3 tasks)
 
+> **Session auth gate.** Step 3 exists to authenticate every MCP server in
+> the main session before any subagent is launched. Subagents do not inherit
+> the parent session's auth tokens — they will fail against any server that
+> was not authenticated here first. Complete auth for every server before
+> exiting Step 3.
+>
+> **No REST fallback.** Never fall back to the REST API — record the result
+> as `AUTH_FAILED` and surface it to the user.
+
 When any MCP call returns an auth error:
 
 1. Extract the auth URL from the error response.
@@ -169,7 +178,7 @@ When any MCP call returns an auth error:
    open -a "Google Chrome Dev" "<auth-url>"
    ```
 
-3. Wait 20 seconds without interrupting the user:
+3. Wait 20 seconds:
 
    ```bash
    sleep 20
@@ -177,8 +186,19 @@ When any MCP call returns an auth error:
 
 4. Retry the call once.
 5. **Retry succeeds** — record as `OK` and continue.
-6. **Retry fails** — record as `AUTH_FAILED: <server-name>` and include in
-   the final report. Do not prompt the user at this point.
+6. **Retry fails** — do NOT move on silently. Prompt the user:
+
+   > `<server-name>` auth failed. Please complete the login in Chrome Dev and
+   > press Enter when done.
+
+   Then retry once more.
+
+7. **Third attempt succeeds** — record as `OK` and continue.
+8. **Third attempt fails** — record as `AUTH_FAILED: <server-name>` and
+   **pause Step 3**. Report to the user which server is still blocked and ask
+   whether to retry or skip. Do not launch any subagent while any server
+   remains in `AUTH_FAILED` state. Only proceed past Step 3 once all servers
+   are either `OK` or explicitly skipped by the user.
 
 ---
 
@@ -361,8 +381,9 @@ the user chose to continue, mark that step as `FAILED` in the summary.
 | Homebrew update fails | Record `FAILED: <error>` in summary |
 | `CLAUDE_PENDING` in brew output | Record `OK` but surface note: "claude-code update available — run `brew upgrade claude-code` after restarting session" |
 | Split-tunnel fails | Report error, offer retry with `mobile` or `direct` mode |
-| Any MCP auth error (Step 3) | Auto: open auth URL in Chrome Dev, `sleep 20`, retry once — no user prompt |
-| MCP auth still fails after retry | Record as `AUTH_FAILED: <server>` in summary |
+| Any MCP auth error (Step 3) | Auto: open auth URL in Chrome Dev, `sleep 20`, retry once — no REST fallback |
+| Retry still fails | Prompt user to confirm login complete, then retry a third time |
+| Third attempt fails | Record `AUTH_FAILED: <server>`, pause Step 3, ask user to retry or skip — do not launch subagents while any server is `AUTH_FAILED` |
 | GitHub repo not found / access denied | Record as `FAILED: <error>` in summary |
 | Jira returns no results | Record as `OK: no issues found` — not a failure |
 | Confluence page not found | Record as `FAILED: page not found` in summary |
