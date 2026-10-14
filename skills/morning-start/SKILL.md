@@ -2,18 +2,28 @@
 name: morning-start
 description: >-
   Morning startup routine. Verifies VPN is connected, logs into all AWS profiles
-  via toka, reconnects all configured Claude MCP servers, and runs the
-  vpn-split-tunnel.bash script to configure split-tunnel routing. Use when the
-  user says "morning start", "start my day", "morning routine", "run startup",
-  or "set up for the day".
+  via toka, verifies configured service integrations, configures split-tunnel
+  routing, updates Homebrew packages, and checks work services. Use when the user
+  says "morning start", "start my day", "morning routine", "run startup", or
+  "set up for the day". The workflow is runtime- and model-independent.
 ---
 
 # Morning Start
 
 ## Goal
 
-Run the morning startup sequence: verify VPN, then run AWS login, MCP reconnect,
-and split-tunnel routing in parallel, and report a combined result.
+Run the morning startup sequence: verify VPN, then run AWS login, integration
+discovery, split-tunnel routing, and Homebrew update in parallel. Check service
+connectivity and report a combined result.
+
+Use the tools and integration-discovery mechanism provided by the current AI
+runtime. Do not assume a particular model, vendor, CLI, slash command, tool
+prefix, or exact MCP function name. Match available tools to the required
+operation by their documented capability.
+
+The MCP calls below are fast-path examples, not required interfaces. Use an
+example directly when the runtime exposes that operation; otherwise select the
+equivalent available tool and preserve the same inputs, limits, and result.
 
 ---
 
@@ -45,11 +55,11 @@ Once VPN is confirmed, launch all four tasks **in parallel** (do not wait for
 one before starting the next):
 
 - **Task A** — AWS login via toka
-- **Task B** — MCP server reconnect
+- **Task B** — Service integration verification
 - **Task C** — Split-tunnel routing
 - **Task D** — Homebrew update
 
-Collect all results before proceeding to Step 3 (Final Report).
+Collect all results before proceeding to Step 3 (Connectivity Checks).
 
 ---
 
@@ -71,30 +81,34 @@ all Sony AWS profiles non-interactively. The command may take 10–30 seconds.
 
 ---
 
-### Task B: Verify MCP Server Configuration
+### Task B: Verify Service Integration Configuration
 
-Run the list command to confirm all expected MCP servers are registered:
+Use the current runtime's native tool or integration discovery mechanism to
+confirm that integrations for these services are available:
 
-```bash
-claude mcp list
-```
+- GitHub
+- Jira
+- Confluence
+- Slack
+- ServiceNow
 
-Check that all three servers appear in the output:
+If the runtime already lists available tools in the session context, inspect
+that list directly instead of making a separate discovery call.
 
-- `sie-jira-mcp`
-- `sie-github-mcp`
-- `sie-confluence-mcp`
+Integration names and tool prefixes vary between runtimes. Match by capability,
+not by a hardcoded server or function name. If the runtime does not expose a
+configuration-listing operation, record this task as `DEFERRED` and use the
+connectivity checks in Step 3 as the authoritative verification.
 
 **Result handling:**
 
-- **All three present** — record as `OK`.
-- **Any missing** — record as `MISSING: <server-name>` and include in the final report.
+- **All five available** — record as `OK`.
+- **Discovery unavailable** — record as `DEFERRED: verified by connectivity checks`.
+- **Any missing** — record as `MISSING: <service>` and include it in the final
+  report.
 
-After reporting, instruct the user:
-
-> MCP servers connect and authenticate on first use in each session. If a
-> server fails with an auth error during the session, run `/mcp` in the Claude
-> Code chat to see server status and follow any auth prompts that appear.
+Do not direct the user to a vendor-specific CLI or slash command. If an
+integration needs authentication, follow the portable auth handling in Step 3.
 
 ---
 
@@ -129,18 +143,19 @@ Run the brew update script to keep packages current.
 ~/dev/sonic/github/bunch-o-scripts/brew_update.sh
 ```
 
-Runs `brew update && brew upgrade && brew autoremove && brew cleanup` with
-`HOMEBREW_NO_INTERACTIVE=1` to suppress prompts and proceed non-interactively.
-This may take a few minutes depending on how many packages need updating. Run in
-background so it does not block the parallel phase from completing.
+The script updates Homebrew packages non-interactively. Before running it,
+identify whether the current AI client is installed through Homebrew and whether
+the script protects that package from a mid-session upgrade. If it does not,
+exclude that package using supported script options or defer the Homebrew task;
+never replace the client executable that is running this workflow. This task may
+take a few minutes, so run it in the background.
 
 **Result handling:**
 
-- **Exit 0, no `CLAUDE_PENDING` line** — record as `OK: N package(s) upgraded`.
-- **Exit 0, `CLAUDE_PENDING` line present** — record as
-  `OK: N package(s) upgraded` and include a note:
-  > ⚠️ `claude-code` has an update available. Run `brew upgrade claude-code`
-  > after restarting your session to avoid breaking a live session.
+- **Exit 0** — record as `OK: N package(s) upgraded`.
+- **Output reports a deferred update for the active AI client** — keep the
+  update deferred and include the script's package-specific follow-up command in
+  the final report. Do not upgrade the client that is executing this workflow.
 - **Non-zero exit** — falls back to `brew doctor`; record result as
   `FAILED: <error>`.
 
@@ -148,72 +163,61 @@ background so it does not block the parallel phase from completing.
 
 ## Step 3: Connectivity Checks (Parallel)
 
-Once Step 2 is complete, launch all five checks **in parallel** using MCP tools:
+Once Step 2 is complete, launch all five checks **in parallel** using the best
+available service-integration tools:
 
 - **Task D** — GitHub access check
 - **Task E** — Jira access check
 - **Task F** — Confluence access check
-- **Task G** — Slack unread count
+- **Task G** — Slack mentions check
 - **Task H** — ServiceNow unresolved ticket count
 
 Collect all results before proceeding to Step 4 (Final Report).
 
 ### Auth error handling (applies to all Step 3 tasks)
 
-> **Session auth gate.** Step 3 exists to authenticate every MCP server in
-> the main session before any subagent is launched. Subagents do not inherit
-> the parent session's auth tokens — they will fail against any server that
-> was not authenticated here first. Complete auth for every server before
-> exiting Step 3.
+> **Session auth gate.** Step 3 authenticates every service integration in the
+> current session. If the runtime supports delegation, delegated agents may not
+> inherit the current session's auth tokens. Complete auth before delegating any
+> later work.
 >
-> **No REST fallback.** Never fall back to the REST API — record the result
-> as `AUTH_FAILED` and surface it to the user.
+> **MCP first.** Prefer an available MCP or native connector. If it remains
+> unavailable or lacks the required operation after authentication is handled,
+> use the runtime's documented API or local-tool fallback and identify the
+> fallback in the final report.
 
-When any MCP call returns an auth error:
+When a service integration returns an auth error:
 
-1. Extract the auth URL from the error response.
-2. Open it automatically — **do not prompt the user**:
-
-   ```bash
-   open -a "Google Chrome Dev" "<auth-url>"
-   ```
-
-3. Wait 20 seconds:
-
-   ```bash
-   sleep 20
-   ```
-
-4. Retry the call once.
+1. Extract the auth URL from the error response and show it clearly to the user.
+2. If the runtime can safely open URLs, open it in the user's default browser.
+3. Ask the user to complete login and confirm when it is finished.
+4. Retry the call once after confirmation.
 5. **Retry succeeds** — record as `OK` and continue.
-6. **Retry fails** — do NOT move on silently. Prompt the user:
-
-   > `<server-name>` auth failed. Please complete the login in Chrome Dev and
-   > press Enter when done.
-
-   Then retry once more.
-
+6. **Retry fails** — do not move on silently. Report the error and ask whether
+   to retry or skip that service.
 7. **Third attempt succeeds** — record as `OK` and continue.
-8. **Third attempt fails** — record as `AUTH_FAILED: <server-name>` and
-   **pause Step 3**. Report to the user which server is still blocked and ask
-   whether to retry or skip. Do not launch any subagent while any server
-   remains in `AUTH_FAILED` state. Only proceed past Step 3 once all servers
-   are either `OK` or explicitly skipped by the user.
+8. **Third attempt fails** — record as `AUTH_FAILED: <service>` and **pause
+   Step 3**. Do not delegate work for that service. Proceed only after every
+   service is `OK` or the user explicitly chooses a fallback or skip.
 
 ---
 
 ### Task D: GitHub Access Check
 
-Use the `sie-github-mcp` MCP server to check the last commit on two repos.
-Run lookups in series.
+Use an available GitHub integration to check the last commit on two repos. Run
+lookups in series.
 
 **Repo 1:** `bis/cloud-docs`
+
+Request one commit from `bis/cloud-docs`. Typical MCP operation:
 
 ```text
 github_list_commits(owner="bis", repo="cloud-docs", perPage=1)
 ```
 
 **Repo 2:** `data-platform/cloud-docs`
+
+Request one commit from `data-platform/cloud-docs`. Typical MCP operation:
 
 ```text
 github_list_commits(owner="data-platform", repo="cloud-docs", perPage=1)
@@ -231,21 +235,28 @@ For each, record the most recent commit's short SHA, author, and date.
 
 ### Task E: Jira Access Check
 
-Use the `sie-jira-mcp` MCP server to find the most recently created Jira issue
-by the current user.
+Use an available Jira integration to find the most recently created Jira issue
+reported by the current user.
 
 **Step 1:** Resolve the current user's identity.
+
+Use the integration's current-user operation and extract its stable account
+identifier, email address, or username.
 
 ```text
 jira_get_me()
 ```
 
-Extract the `emailAddress` (or `name`) field from the response.
-
 **Step 2:** Search for their most recent issue.
 
+Search for one issue using `reporter = '<current-user>' ORDER BY created DESC`,
+substituting the identity format supported by the integration.
+
 ```text
-jira_search_issues(jql="reporter = '<emailAddress>' ORDER BY created DESC", maxResults=1)
+jira_search_issues(
+  jql="reporter = '<current-user>' ORDER BY created DESC",
+  maxResults=1
+)
 ```
 
 Record the issue key, summary, and creation date of the top result.
@@ -261,19 +272,25 @@ Record the issue key, summary, and creation date of the top result.
 
 ### Task F: Confluence Access Check
 
-Use the `sie-confluence-mcp` MCP server to check the last-updated time for two
+Use an available Confluence integration to check the last-updated time for two
 pages. Run lookups in series.
 
 **Page 1:** DSOSYS space overview — fetch by page ID `1244322093`.
 
+Fetch page ID `1244322093`, including version or history data when the
+integration supports expansion fields.
+
 ```text
-confluence_get_page(id="1244322093", expand=["version","history"])
+confluence_get_page(id="1244322093", expand=["version", "history"])
 ```
 
 **Page 2:** Pillar Roadmap page — fetch by page ID `3116384383`.
 
+Fetch page ID `3116384383`, including version or history data when the
+integration supports expansion fields.
+
 ```text
-confluence_get_page(id="3116384383", expand=["version","history"])
+confluence_get_page(id="3116384383", expand=["version", "history"])
 ```
 
 For each, record the page title and last-modified date.
@@ -286,8 +303,8 @@ For each, record the page title and last-modified date.
 
 ### Task G: Slack Mentions Check
 
-Use the `sie-slack-mcp` MCP server to verify Slack connectivity and check for
-any @mentions in the last 24 hours.
+Use an available Slack integration to verify connectivity and request up to 20
+mentions from the last 24 hours.
 
 ```text
 list_mentions(since="1d", count=20)
@@ -304,18 +321,24 @@ list_mentions(since="1d", count=20)
 
 ### Task H: ServiceNow Unresolved Ticket Count
 
-Use the `sie-servicenow-mcp` MCP server to count open/in-progress incidents
+Use an available ServiceNow integration to count open or in-progress incidents
 assigned to the current user.
 
 **Step 1:** Resolve the current user's identity.
+
+Use the integration's current-user operation and extract the email address or
+stable user identifier.
 
 ```text
 servicenow_get_user()
 ```
 
-Extract the `email` field from the response.
-
 **Step 2:** Query their unresolved incidents.
+
+Query the `incident` table for up to 100 records. Request `number`,
+`short_description`, and `state`, and use the equivalent of
+`assigned_to.email=<email>^state!=6^state!=7` for the integration's query
+syntax.
 
 ```text
 servicenow_query_table(
@@ -347,9 +370,9 @@ Morning startup complete.
 
   VPN:                  Connected
   AWS (toka):           OK
-  MCP servers:          3/3 configured
+  Integrations:         5/5 available
   Split-tunnel:         Routes configured
-  Homebrew:             OK (claude-code update pending — see note below)
+  Homebrew:             OK (active-client update deferred — see note below)
 
   GitHub (bis):         OK: abc1234 by author on 2026-07-22
   GitHub (data-platform): OK: def5678 by author on 2026-07-21
@@ -374,16 +397,16 @@ the user chose to continue, mark that step as `FAILED` in the summary.
 | VPN not connected | Stop immediately, prompt user to connect VPN |
 | `toka` not found | Report "`toka` alias not found — check shell profile" |
 | toka fails | Report error, ask user whether to continue |
-| `claude` CLI not found | Report "claude CLI not found — check PATH" |
-| MCP server missing from list | Report as missing, remind user to re-add with `claude mcp add` |
+| Integration discovery unavailable | Defer verification to the Step 3 connectivity checks |
+| Service integration missing | Report it as missing and name the unavailable capability |
 | vpn-split-tunnel.bash not found | Report path not found, skip split-tunnel step |
 | brew_update.sh not found | Report path not found, skip Homebrew step |
 | Homebrew update fails | Record `FAILED: <error>` in summary |
-| `CLAUDE_PENDING` in brew output | Record `OK` but surface note: "claude-code update available — run `brew upgrade claude-code` after restarting session" |
+| Active AI client update deferred | Record `OK` and surface the package-specific follow-up command emitted by the script |
 | Split-tunnel fails | Report error, offer retry with `mobile` or `direct` mode |
-| Any MCP auth error (Step 3) | Auto: open auth URL in Chrome Dev, `sleep 20`, retry once — no REST fallback |
-| Retry still fails | Prompt user to confirm login complete, then retry a third time |
-| Third attempt fails | Record `AUTH_FAILED: <server>`, pause Step 3, ask user to retry or skip — do not launch subagents while any server is `AUTH_FAILED` |
+| Any integration auth error (Step 3) | Surface the auth URL, help the user open it, and retry after confirmation |
+| Retry still fails | Report the error and ask whether to retry, use a documented fallback, or skip |
+| Third attempt fails | Record `AUTH_FAILED: <service>`, pause Step 3, and ask the user to retry or skip |
 | GitHub repo not found / access denied | Record as `FAILED: <error>` in summary |
 | Jira returns no results | Record as `OK: no issues found` — not a failure |
 | Confluence page not found | Record as `FAILED: page not found` in summary |
