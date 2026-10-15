@@ -1,5 +1,13 @@
 # API Fallback Pattern
 
+## Runtime compatibility
+
+Follow [the shared access strategy](access-strategy.md) as the source of truth:
+discover available MCP tools first, handle auth after user confirmation, then
+use a service CLI or documented REST fallback. Token presence does not select
+the access method. Tool names in examples must be mapped to current schemas.
+Never log tokens or dump credential-bearing environment variables.
+
 ## Overview
 
 Skills that interact with external services (Jira, GitHub, Confluence, etc.) should support both MCP server access and direct REST API access. This allows skills to work in environments where:
@@ -13,7 +21,7 @@ Skills that interact with external services (Jira, GitHub, Confluence, etc.) sho
 When a skill needs to access an external service, follow this priority order:
 
 1. **Try MCP first** - Use MCP server tools if available
-2. **Fallback to REST API** - If MCP unavailable or fails, check for API token in environment variables
+2. **Fallback to REST API** - After MCP authentication is handled, if unavailable, check for API token in environment variables
 3. **If both fail** - Suggest the user configure MCP servers or provide an API token
 
 ## Environment Variable Naming
@@ -59,7 +67,7 @@ See the following files for REST API implementation details:
 
 ```markdown
 1. Try to use MCP server tools first
-2. If MCP unavailable or fails, check if `<SERVICE>_TOKEN` environment variable exists
+2. After MCP authentication is handled, if unavailable, check if `<SERVICE>_TOKEN` environment variable exists
 3. If token exists, set `useRestApi = true`
 4. If neither available, report error
 ```
@@ -72,14 +80,14 @@ See the following files for REST API implementation details:
 - Handle MCP-specific errors (VPN, authentication, etc.)
 - If successful, operation complete
 
-**If MCP fails or unavailable (REST API fallback):**
+**After MCP authentication is handled, if unavailable (REST API fallback):**
 - Check if token exists in environment
 - Get base URL from environment or use service default
   - Jira: `${JIRA_BASE_URL:-https://jira.sie.sony.com}`
   - GitHub: `${GITHUB_API_URL:-https://github.sie.sony.com/api/v3}`
   - Confluence: `${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com}`
 - Construct the appropriate REST API request (see service-specific guide)
-- Use `curl` via the Bash tool with appropriate headers
+- Use `curl` via an available shell tool with appropriate headers
 - Parse the JSON response
 ```
 
@@ -111,9 +119,9 @@ Call `jira_add_issue_comment` with:
 - `key`: the ticket key
 - `comment`: the comment text
 
-If MCP succeeds, done. If MCP fails or unavailable, proceed to fallback.
+If MCP succeeds, done. After MCP authentication is handled, if unavailable, proceed to fallback.
 
-**If MCP fails or unavailable (REST API fallback):**
+**After MCP authentication is handled, if unavailable (REST API fallback):**
 
 1. Check if `JIRA_TOKEN` environment variable is set.
 1. If yes, get base URL: `JIRA_BASE_URL` from environment (default: `https://jira.sie.sony.com`)

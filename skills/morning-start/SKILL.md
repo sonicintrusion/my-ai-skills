@@ -86,11 +86,17 @@ all Sony AWS profiles non-interactively. The command may take 10–30 seconds.
 Use the current runtime's native tool or integration discovery mechanism to
 confirm that integrations for these services are available:
 
-- GitHub
 - Jira
 - Confluence
 - Slack
-- ServiceNow
+
+Some integrations are **disabled by default** to save context. Do not report
+them as missing:
+
+- **GitHub** — the MCP server is disabled; GitHub access uses the `gh` CLI
+  (verified in Step 3, Task D).
+- **ServiceNow** — the MCP server is disabled; it is only checked when the user
+  has enabled it for the session (Step 3, Task H).
 
 If the runtime already lists available tools in the session context, inspect
 that list directly instead of making a separate discovery call.
@@ -102,7 +108,7 @@ connectivity checks in Step 3 as the authoritative verification.
 
 **Result handling:**
 
-- **All five available** — record as `OK`.
+- **All three available** — record as `OK`.
 - **Discovery unavailable** — record as `DEFERRED: verified by connectivity checks`.
 - **Any missing** — record as `MISSING: <service>` and include it in the final
   report.
@@ -166,11 +172,11 @@ take a few minutes, so run it in the background.
 Once Step 2 is complete, launch all five checks **in parallel** using the best
 available service-integration tools:
 
-- **Task D** — GitHub access check
+- **Task D** — GitHub access check (`gh` CLI)
 - **Task E** — Jira access check
 - **Task F** — Confluence access check
 - **Task G** — Slack mentions check
-- **Task H** — ServiceNow unresolved ticket count
+- **Task H** — ServiceNow unresolved ticket count (only if enabled)
 
 Collect all results before proceeding to Step 4 (Final Report).
 
@@ -204,23 +210,15 @@ When a service integration returns an auth error:
 
 ### Task D: GitHub Access Check
 
-Use an available GitHub integration to check the last commit on two repos. Run
-lookups in series.
+Use the `gh` CLI to check the last commit on two repos. The GitHub MCP server
+is disabled by default, so do not wait for or authenticate it. Run lookups in
+series.
 
-**Repo 1:** `bis/cloud-docs`
-
-Request one commit from `bis/cloud-docs`. Typical MCP operation:
-
-```text
-github_list_commits(owner="bis", repo="cloud-docs", perPage=1)
-```
-
-**Repo 2:** `data-platform/cloud-docs`
-
-Request one commit from `data-platform/cloud-docs`. Typical MCP operation:
-
-```text
-github_list_commits(owner="data-platform", repo="cloud-docs", perPage=1)
+```bash
+for repo in bis/cloud-docs data-platform/cloud-docs; do
+  gh api --hostname github.sie.sony.com "repos/$repo/commits?per_page=1" \
+    --jq '.[0] | "\(.sha[0:7]) by \(.commit.author.name) on \(.commit.author.date[0:10])"'
+done
 ```
 
 For each, record the most recent commit's short SHA, author, and date.
@@ -228,7 +226,8 @@ For each, record the most recent commit's short SHA, author, and date.
 **Result handling:**
 
 - **Success** — record as `OK: <sha> by <author> on <date>`.
-- **Auth error** — follow Step 3 auth policy above.
+- **Auth error** — run `gh auth status --hostname github.sie.sony.com` and ask
+  the user to run `gh auth login --hostname github.sie.sony.com`; retry once.
 - **Other error** — record as `FAILED: <error>`.
 
 ---
@@ -321,7 +320,12 @@ list_mentions(since="1d", count=20)
 
 ### Task H: ServiceNow Unresolved Ticket Count
 
-Use an available ServiceNow integration to count open or in-progress incidents
+The ServiceNow MCP server is **disabled by default**. If no ServiceNow
+integration is available in the session, record `SKIPPED: disabled by default`
+and do not attempt authentication or a REST fallback. Run the steps below only
+when the user has enabled ServiceNow for the session.
+
+Use the available ServiceNow integration to count open or in-progress incidents
 assigned to the current user.
 
 **Step 1:** Resolve the current user's identity.
@@ -354,6 +358,7 @@ tickets are counted. Count the returned records.
 
 **Result handling:**
 
+- **Not enabled** — record as `SKIPPED: disabled by default`.
 - **Success** — record as `OK: <N> unresolved incidents`.
 - **Zero results** — record as `OK: no unresolved incidents`.
 - **Auth error** — follow Step 3 auth policy above.
@@ -370,7 +375,7 @@ Morning startup complete.
 
   VPN:                  Connected
   AWS (toka):           OK
-  Integrations:         5/5 available
+  Integrations:         3/3 available (GitHub via gh; ServiceNow off)
   Split-tunnel:         Routes configured
   Homebrew:             OK (active-client update deferred — see note below)
 
@@ -380,7 +385,7 @@ Morning startup complete.
   Confluence (DSOSYS):  OK: "Overview" last updated 2026-07-22
   Confluence (Pillar):  OK: "Pillar Roadmap - Platform Health O11y" last updated 2026-07-21
   Slack:                OK: no mentions in the last 24h
-  ServiceNow:           OK: 3 unresolved incidents
+  ServiceNow:           SKIPPED: disabled by default
 
 Ready.
 ```
@@ -407,8 +412,10 @@ the user chose to continue, mark that step as `FAILED` in the summary.
 | Any integration auth error (Step 3) | Surface the auth URL, help the user open it, and retry after confirmation |
 | Retry still fails | Report the error and ask whether to retry, use a documented fallback, or skip |
 | Third attempt fails | Record `AUTH_FAILED: <service>`, pause Step 3, and ask the user to retry or skip |
+| `gh` not authenticated | Ask the user to run `gh auth login --hostname github.sie.sony.com`, then retry once |
 | GitHub repo not found / access denied | Record as `FAILED: <error>` in summary |
 | Jira returns no results | Record as `OK: no issues found` — not a failure |
 | Confluence page not found | Record as `FAILED: page not found` in summary |
 | Slack returns no mentions | Record as `OK: no mentions in the last 24h` — not a failure |
+| ServiceNow MCP not enabled | Record as `SKIPPED: disabled by default` — not a failure |
 | ServiceNow returns no results | Record as `OK: no unresolved incidents` — not a failure |

@@ -9,6 +9,14 @@ description: >-
 
 # Sony sprint manager
 
+## Runtime and access compatibility
+
+Follow [the shared access strategy](../mcp-api-access/access-strategy.md) for
+capability discovery, MCP-first access, authentication, and documented fallbacks.
+Tool names and arguments below are examples; use the current tool's schema.
+Handle authentication before any fallback, and never print credential values.
+Respect the current sandbox and approval mechanism for local and network access.
+
 ## Goal
 
 Maintain a per-sprint markdown workspace file driven by Jira.
@@ -66,10 +74,11 @@ Before doing anything else, scan `<sprintsRoot>/` for sprint folders that belong
 
 ## Mandatory first step: retrieve the current sprint (Jira MCP or REST API)
 
-Check if `JIRA_TOKEN` environment variable is set to determine access method.
+Use available Jira MCP capabilities first. Check `JIRA_TOKEN` only when a
+documented REST fallback is needed.
 See `../mcp-api-access/jira-rest-api.md` for REST API details.
 
-**If JIRA_TOKEN is available (REST API path):**
+**REST fallback (only when MCP is unavailable or lacks the operation):**
 
 1. Fetch candidate boards:
 
@@ -89,7 +98,7 @@ See `../mcp-api-access/jira-rest-api.md` for REST API details.
 4. If no active sprint, retry with `state=future`
 5. Choose the first returned sprint as "current"
 
-**If JIRA_TOKEN is not available (MCP path):**
+**Primary MCP path (regardless of token availability):**
 
 1. Before calling any Jira MCP tool, check its schema/descriptor first
    (whatever mechanism the runtime provides for tool schema inspection).
@@ -208,7 +217,7 @@ synced_at: <ISO-8601 timestamp of when this file was last written>
 
 If the user asks to sync issues, or if the workspace file is newly created:
 
-**If JIRA_TOKEN is available (REST API path):**
+**REST fallback (only when MCP is unavailable or lacks the operation):**
 
 1. Call the sprint issues endpoint:
 
@@ -226,7 +235,7 @@ If the user asks to sync issues, or if the workspace file is newly created:
 - TODO: list issues here (key, summary, status, assignee)
 ```
 
-**If JIRA_TOKEN is not available (MCP path):**
+**Primary MCP path (regardless of token availability):**
 
 1. Check the `jira_get_sprint_issues` schema/descriptor (MANDATORY before calling).
 2. Call `jira_get_sprint_issues` for the `sprintId` (use default `fields`; do not set
@@ -248,7 +257,7 @@ current sprint:
    - The current `sprintId`, `sprintName`, and `sprintDir` from the steps above
    - The current user identity from Jira
 
-**If JIRA_TOKEN is available (REST API path):**
+**REST fallback (only when MCP is unavailable or lacks the operation):**
 
 1. Get current user:
 
@@ -276,7 +285,7 @@ current sprint:
    `GET /rest/api/2/field` and search for a field named "User Story" to confirm
    the correct field ID, then retry.
 
-**If JIRA_TOKEN is not available (MCP path):**
+**Primary MCP path (regardless of token availability):**
 
 1. Get current user identity (use `jira_get_me` if available)
 2. Retrieve sprint issues with `jira_get_sprint_issues`.
@@ -436,7 +445,7 @@ Apply the rules defined in the `markdownlint` skill for all files created or mod
 
 ## If Jira MCP is unavailable
 
-If Jira MCP tools are unavailable or erroring, ask the user to paste either:
+If MCP and documented REST access are both unavailable, ask the user to paste either:
 
 - the sprint issue list (key + summary + status + assignee), or
 - just the list of issue keys

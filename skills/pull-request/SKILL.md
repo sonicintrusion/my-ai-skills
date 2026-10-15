@@ -25,18 +25,19 @@ For REST API details, see `../mcp-api-access/github-rest-api.md`.
 
 ## Tool Mapping
 
-Use the first available tier for each operation.
+Use the first available tier for each operation. MCP names below are illustrative;
+discover the current tools and follow their schemas before calling them.
 
 | Operation | MCP tool | gh CLI | REST API endpoint |
-|-----------|----------|--------|-------------------|
+| ----------- | ---------- | -------- | ------------------- |
 | Create PR | `github_create_pull_request` | `gh pr create` | `POST /repos/{owner}/{repo}/pulls` |
-| Get PR | `github_get_file_contents` (via PR number) | `gh pr view {number}` | `GET /repos/{owner}/{repo}/pulls/{number}` |
+| Get PR | Available PR-details operation | `gh pr view {number}` | `GET /repos/{owner}/{repo}/pulls/{number}` |
 | Update PR | `github_update_pull_request` | `gh pr edit {number}` | `PATCH /repos/{owner}/{repo}/pulls/{number}` |
 | List PRs | `github_list_pull_requests` | `gh pr list` | `GET /repos/{owner}/{repo}/pulls` |
 | Add comment | `github_add_issue_comment` | `gh pr comment {number}` | `POST /repos/{owner}/{repo}/issues/{number}/comments` |
 | Get checks | `github_get_workflow_run` | `gh pr checks {number}` | `GET /repos/{owner}/{repo}/commits/{sha}/check-runs` |
 | Get job logs | `github_get_job_logs` | `gh run view {run-id} --log-failed` | `GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs` |
-| Merge PR | _(not available)_ | `gh pr merge {number} --squash` | `PUT /repos/{owner}/{repo}/pulls/{number}/merge` |
+| Merge PR | Available PR-merge operation | `gh pr merge {number} --squash` | `PUT /repos/{owner}/{repo}/pulls/{number}/merge` |
 
 ---
 

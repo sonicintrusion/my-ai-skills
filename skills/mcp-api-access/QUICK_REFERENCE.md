@@ -1,159 +1,45 @@
 # Quick Reference: API Access Methods
 
-This document provides quick examples of how to check which access method will be used and how to test each service.
+## Select access by capability
 
-## Check Environment Status
+Follow [the shared access strategy](access-strategy.md):
 
-```bash
-# Quick status check
-env | grep -E '(JIRA|GITHUB|CONFLUENCE)_(TOKEN|BASE_URL)|JENKINS_(TOKEN|USER)'
-```
+1. Inspect available MCP tools, including supported deferred-tool discovery.
+2. Use the operation supported by the current schema; names vary by runtime.
+3. If authentication is required, show the URL and retry after the user confirms
+   login. Do not infer success from a delay.
+4. If MCP is unavailable or lacks the operation, use the service CLI, then REST.
+5. Report the method used and any capability that could not be verified.
 
-## Test Each Service
+Token presence never takes priority over an available MCP tool. GitHub MCP may
+be disabled in some sessions; use `gh` when no suitable MCP tool is exposed.
 
-### Jira
-
-```bash
-# Test Jira access (get current user)
-curl -X GET "${JIRA_BASE_URL:-https://jira.sie.sony.com}/rest/api/2/myself" \
-  -H "Authorization: Bearer ${JIRA_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -s | jq -r '.displayName // "Error: " + .errorMessages[0]'
-```
-
-### GitHub
+## Check fallback credentials without exposing values
 
 ```bash
-# Test GitHub access (get current user)
-curl -X GET "${GITHUB_API_URL:-https://github.sie.sony.com/api/v3}/user" \
-  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-  -H "Accept: application/vnd.github+json" \
-  -s | jq -r '.login // "Error: " + .message'
+python3 - <<'PYTHON'
+import os
+names = {"JIRA_TOKEN", "GITHUB_TOKEN", "CONFLUENCE_TOKEN"}
+names.update(key for key in os.environ if key.startswith("JENKINS_TOKEN_"))
+for name in sorted(names):
+    status = "set" if os.environ.get(name) else "not set"
+    print(f"{name}: {status}")
+PYTHON
 ```
 
-### Confluence
+Never dump environment variables or print tokens. Use service-specific guides
+for REST authentication and endpoints only after selecting the fallback:
 
-```bash
-# Test Confluence access (get current user)
-curl -X GET "${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com}/rest/api/user/current" \
-  -H "Authorization: Bearer ${CONFLUENCE_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -s | jq -r '.username // "Error"'
-```
-
-### Jenkins
-
-```bash
-# List available Jenkins tokens
-env | grep '^JENKINS_TOKEN_'
-
-# Test Jenkins access (get server info) — substitute your instance URL
-JENKINS_BASE_URL="https://build.randd.bis.sie.sony.com"
-curl -s -u "${USER}:${JENKINS_TOKEN_RANDD}" \
-  "${JENKINS_BASE_URL}/api/json?tree=mode,nodeDescription" \
-  | jq -r '.nodeDescription // "Error"'
-```
+- [Jira](jira-rest-api.md)
+- [GitHub](github-rest-api.md)
+- [Confluence](confluence-rest-api.md)
+- [Jenkins](jenkins-rest-api.md)
 
 ## Troubleshooting
 
-### Token Issues
-
-**Symptom**: 401 Unauthorized
-
-- **Cause**: Token is invalid or expired
-- **Fix**: Regenerate token in the service's settings
-
-**Symptom**: 403 Forbidden
-
-- **Cause**: Token lacks required permissions
-- **Fix**: Update token permissions/scopes
-
-### Network Issues
-
-**Symptom**: Connection timeout or refused
-
-- **Cause**: VPN required or firewall blocking
-- **Fix**: Connect to VPN or check network settings
-
-**Symptom**: Certificate errors
-
-- **Cause**: Self-signed certificates or corporate proxy
-- **Fix**: Add `-k` flag to curl (insecure, use cautiously) or configure CA certificates
-
-### MCP Fallback
-
-If REST API fails but MCP is configured:
-
-1. Skill will automatically attempt to use MCP
-2. Check MCP server status: Look for MCP server logs
-3. Restart MCP servers if needed
-
-## Decision Flow
-
-```text
-┌─────────────────────────┐
-│  Skill needs to access  │
-│   external service      │
-└───────────┬─────────────┘
-            │
-            ▼
-┌─────────────────────────┐
-│ Check for *_TOKEN env   │
-│ variable                │
-└───────────┬─────────────┘
-            │
-        ┌───┴───┐
-        │Token? │
-        └───┬───┘
-            │
-    ┌───────┴───────┐
-    │               │
-    ▼               ▼
-┌───────┐      ┌────────┐
-│  Yes  │      │   No   │
-└───┬───┘      └────┬───┘
-    │               │
-    ▼               ▼
-┌───────────┐  ┌─────────┐
-│  Use REST │  │ Use MCP │
-│    API    │  │ Server  │
-└───────────┘  └─────────┘
-```
-
-## Current Environment Status
-
-Run this to see your current configuration:
-
-```bash
-echo "=== API Access Configuration ==="
-echo ""
-echo "Jira:"
-echo "  Token: $([ -n "$JIRA_TOKEN" ] && echo "✓ Available (will use REST API)" || echo "✗ Not set (will use MCP)")"
-echo "  Base URL: ${JIRA_BASE_URL:-https://jira.sie.sony.com} (default)"
-echo ""
-echo "GitHub:"
-echo "  Token: $([ -n "$GITHUB_TOKEN" ] && echo "✓ Available (will use REST API)" || echo "✗ Not set (will use MCP)")"
-echo "  API URL: ${GITHUB_API_URL:-https://github.sie.sony.com/api/v3} (default)"
-echo ""
-echo "Confluence:"
-echo "  Token: $([ -n "$CONFLUENCE_TOKEN" ] && echo "✓ Available (will use REST API)" || echo "✗ Not set (will use MCP)")"
-echo "  Base URL: ${CONFLUENCE_BASE_URL:-https://confluence.sie.sony.com} (default)"
-```
-
-## Performance Comparison
-
-| Method | Latency | Reliability | VPN Required | Setup Complexity |
-|--------|---------|-------------|--------------|------------------|
-| REST API | Lower (~100-500ms) | High | Maybe* | Low (just token) |
-| MCP Server | Higher (~200-1000ms) | Medium | Maybe* | Medium (server + config) |
-
-*Depends on corporate network configuration
-
-## Best Practices
-
-1. **Set tokens for best performance**: REST API is typically faster
-2. **Keep tokens secure**: Store in secure credential managers
-3. **Rotate tokens regularly**: Follow security best practices
-4. **Monitor rate limits**: Both REST API and MCP have limits
-5. **Use VPN when required**: Some services require VPN regardless of method
-6. **Test both paths**: Ensure fallback works if primary method fails
+- Authentication error: surface sign-in instructions and retry after confirmation.
+- Permission denied: verify access; do not bypass restrictions with another token.
+- Network timeout: check the target host and required VPN connectivity.
+- Certificate error: configure the trusted CA; preserve certificate verification.
+- Missing tools: report which capabilities are absent in the current session.
+- Uncertain mutation result: check for the resulting object before retrying.

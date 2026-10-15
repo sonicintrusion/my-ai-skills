@@ -9,6 +9,14 @@ description: >-
 
 # Jira Skill
 
+## Runtime and access compatibility
+
+Follow [the shared access strategy](../mcp-api-access/access-strategy.md) for
+capability discovery, MCP-first access, authentication, and documented fallbacks.
+Tool names and arguments below are examples; use the current tool's schema.
+Handle authentication before any fallback, and never print credential values.
+Respect the current sandbox and approval mechanism for local and network access.
+
 ## Goal
 
 Unified interface for Jira ticket operations: create, update, close, and special BAU ticket handling.

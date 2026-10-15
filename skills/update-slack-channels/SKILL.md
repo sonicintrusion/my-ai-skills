@@ -9,6 +9,14 @@ description: >-
 
 # Update Slack Channels Memory
 
+## Runtime and access compatibility
+
+Follow [the shared access strategy](../mcp-api-access/access-strategy.md) for
+capability discovery, MCP-first access, authentication, and documented fallbacks.
+Tool names and arguments below are examples; use the current tool's schema.
+Handle authentication before any fallback, and never print credential values.
+Respect the current sandbox and approval mechanism for local and network access.
+
 ## Goal
 
 Fetch all Slack channels and group DMs the current user is a member of, then
@@ -42,14 +50,16 @@ Then update the `user_profile.md` Identifiers table — replace the `TBD` value
 (or add a new row) with the resolved `SLACK_USER_ID`.
 
 If this call returns an auth error, follow the standard auth-retry policy:
-open the auth URL in Google Chrome Dev, wait 30 seconds, then retry once.
+show the auth URL, ask the user to complete login, and retry after confirmation.
 
 ---
 
 ## Step 2: Fetch All Channels
 
 Call `list_my_channels` in pages until exhausted. Use `limit=200` per page and
-follow `next_cursor` until it is empty.
+follow `next_cursor` until it is empty. Include group DMs using the supported
+`mpim` type or a separate group-DM listing operation. If unsupported, report
+that limitation and preserve the existing snapshot rather than claiming a full sync.
 
 ```text
 list_my_channels(limit=200, types=["public_channel", "private_channel"])

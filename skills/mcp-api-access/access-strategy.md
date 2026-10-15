@@ -19,7 +19,16 @@ before moving to the next tier.
 
 ### Try the MCP tool
 
-Call the relevant MCP tool for the operation.
+Inspect the current session's available tools and any supported deferred-tool
+search before deciding an integration is unavailable. Match tools by documented
+capability and inspect their schemas; example names in skills are illustrative,
+not guaranteed interfaces. Do not invent calls or assume a configured server is
+exposed to this session. Use the runtime's tool mechanism, without assuming a
+particular vendor, model, tool prefix, shell, or browser. Preserve the selected
+model and inherit it for delegated work unless the user or applicable
+instructions explicitly request an override. Delegate only when authorized.
+
+Call the relevant available MCP tool for the operation.
 
 If the call succeeds, the task is complete. Do not proceed to Tier 2.
 
@@ -27,20 +36,17 @@ If the call succeeds, the task is complete. Do not proceed to Tier 2.
 
 If the MCP tool responds with an authentication or authorisation error:
 
-1. Extract the auth URL from the MCP response.
-2. Open it automatically in Google Chrome Dev:
+1. Show the returned authentication URL clearly to the user. If no URL is
+   returned, report the error and the documented sign-in procedure.
+2. Ask the user to complete login and confirm when it is finished.
+3. Retry the same operation after that confirmation. Elapsed time does not
+   establish authentication.
+4. If access still fails, report the failure and use a documented fallback
+   where available. A permission denial is not authorization to bypass access
+   controls.
 
-   ```bash
-   open -a "Google Chrome Dev" "<auth URL>"
-   ```
-
-3. Wait approximately 30 seconds for the auth process to complete.
-4. Retry the MCP operation automatically — do not prompt the user first.
-5. If the retry succeeds, the task is complete. Do not proceed to Tier 2.
-6. If the retry still fails, inform the user that the auth page was opened and
-   ask them to confirm when authentication is complete, then retry once more.
-
-If the final retry succeeds, the task is complete. Do not proceed to Tier 2.
+For a mutation with an uncertain outcome, check whether it succeeded before
+retrying through another tier to avoid duplicate comments, issues, or PRs.
 
 ### When to fall through from Tier 1
 
@@ -114,7 +120,7 @@ Fall through when:
 
 ## Tier 3: REST API
 
-Use direct REST API calls via `curl` in the Bash tool.
+Use direct REST API calls via `curl` in an available shell tool.
 
 See [README.md](README.md) for the general fallback pattern and the
 service-specific guides below:
@@ -134,7 +140,7 @@ REST API calls require a token from the environment:
 | Confluence | `CONFLUENCE_TOKEN`      | `CONFLUENCE_BASE_URL` |
 | Jenkins    | `JENKINS_TOKEN_<ALIAS>` | extracted from URL    |
 
-Default base URLs:
+Known SIE base URLs (use only for explicit SIE context):
 
 - GitHub: `https://github.sie.sony.com/api/v3`
 - Jira: `https://jira.sie.sony.com`

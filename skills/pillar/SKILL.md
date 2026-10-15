@@ -5,6 +5,14 @@ description: Manage pillar workspaces synced with Confluence and Jira. Supports 
 
 # Pillar Skill
 
+## Runtime and access compatibility
+
+Follow [the shared access strategy](../mcp-api-access/access-strategy.md) for
+capability discovery, MCP-first access, authentication, and documented fallbacks.
+Tool names and arguments below are examples; use the current tool's schema.
+Handle authentication before any fallback, and never print credential values.
+Respect the current sandbox and approval mechanism for local and network access.
+
 ## Goal
 
 Unified interface for managing pillar workspaces that sync with Confluence roadmap pages and Jira epics/tickets.
@@ -36,14 +44,14 @@ All operations need a **pillar code** — short lowercase identifier (e.g. `pho`
 
 **MCP Primary (Confluence & Jira):**
 
-- Confluence MCP: Requires Okta/VPN auth (if auth error, open sign-in URL and retry)
+- Confluence MCP: Requires Okta/VPN auth (if auth error, show sign-in URL and retry after user confirmation)
 - Jira MCP: Requires VPN connection
 - If MCP fails, suggest VPN check or MCP server restart
 
 **REST API Fallback:**
 
 - Not typically used for pillar operations (MCP is primary)
-- Confluence and Jira tokens available if needed
+- Check whether Confluence and Jira tokens are available when fallback is needed
 
 ## Common: Workspace Structure
 
@@ -60,18 +68,18 @@ pillar/
 
 ---
 
-# Operation 1: Init
+## Operation 1: Init
 
 Bootstrap a new pillar workspace from scratch.
 
-## Input Patterns
+### Input Patterns
 
 - `pillar-init pho`
 - `init pho pillar`
 - `set up a new pillar for pho`
 - `create pillar workspace for pho`
 
-## Inputs Required
+### Inputs Required
 
 Ask the user for (or extract from their message):
 
@@ -80,7 +88,7 @@ Ask the user for (or extract from their message):
 3. **Confluence page URL** — the roadmap page URL (e.g. `https://confluence.sie.sony.com/pages/viewpage.action?pageId=3116384383`)
 4. **Jira project key** — defaults to `DSOSYS` if not specified
 
-## Step 1: Create folder structure
+### Step 1: Create folder structure
 
 Create directories:
 
@@ -89,7 +97,7 @@ pillar/<pillar-code>/
 pillar/<pillar-code>/_archived/
 ```
 
-## Step 2: Create config file
+### Step 2: Create config file
 
 Write `pillar/<pillar-code>/config.md`:
 
@@ -105,11 +113,11 @@ Write `pillar/<pillar-code>/config.md`:
 
 Extract the numeric page ID from the `pageId=` query parameter in the Confluence URL.
 
-## Step 3: Run sync operation
+### Step 3: Run sync operation
 
 Internally invoke the **Sync** operation (see Operation 2 below) using the same inputs. The sync will populate ROADMAP.md, epic folders, and ticket files.
 
-## Step 4: Report
+### Step 4: Report
 
 Confirm:
 
@@ -119,29 +127,29 @@ Confirm:
 
 ---
 
-# Operation 2: Sync
+## Operation 2: Sync
 
 Full bidirectional sync between local workspace and Confluence/Jira.
 
-## Op 2: Input Patterns
+### Op 2: Input Patterns
 
 - `pillar-sync pho`
 - `sync pho pillar`
 - `sync pillar roadmap for pho`
 
-## Op 2: Goal
+### Op 2: Goal
 
 Two-way sync:
 
 1. **Pull** — Fetch current state from Confluence and Jira into local files
 2. **Push** — Detect local changes and write them back to Jira
 
-## Op 2: Inputs Required
+### Op 2: Inputs Required
 
 1. **Pillar code** — e.g. `pho`
 2. **Confluence page URL or page ID** (optional if config exists)
 
-## Step 1: Load pillar config
+### Step 1: Load pillar config
 
 Read `pillar/<pillar-code>/config.md` for:
 
@@ -152,7 +160,7 @@ Read `pillar/<pillar-code>/config.md` for:
 
 If config doesn't exist, create it using provided inputs.
 
-## Step 2: Fetch Confluence page (PULL)
+### Step 2: Fetch Confluence page (PULL)
 
 **Try MCP first:**
 
@@ -169,14 +177,14 @@ Parse the storage-format body to extract:
 
 If page is XML/HTML, look for `<table>` elements and extract `<td>` cell text. Strip tags to get plain text.
 
-## Step 3: Determine epics
+### Step 3: Determine epics
 
 For each row/item on Confluence page:
 
 - Extract: epic name, Jira key (if present), status, owner, description
 - If no Jira key: flag as `[NO_JIRA_KEY]` — do NOT auto-create, note in ROADMAP.md
 
-## Step 4: Fetch Jira data (PULL)
+### Step 4: Fetch Jira data (PULL)
 
 For each epic with a Jira key:
 
@@ -190,13 +198,13 @@ For each epic with a Jira key:
    - `"Epic Link" = <EPIC_KEY> OR parentEpic = <EPIC_KEY> ORDER BY created ASC`
    - Fallback: `project = DSOSYS AND "Epic Link" = <EPIC_KEY>`
 
-## Step 5: Push local changes to Jira (PUSH)
+### Step 5: Push local changes to Jira (PUSH)
 
 Before updating local files, check existing local files for changes to push.
 
 For each file at `pillar/<pillar-code>/<KEY>/EPIC.md` or `pillar/<pillar-code>/<KEY>/<TICKET_KEY>.md`:
 
-### 5a: Read existing local file
+#### 5a: Read existing local file
 
 Extract from local file:
 
@@ -204,7 +212,7 @@ Extract from local file:
 - `## Description` section: full description text
 - `## Notes / Updates` → `### Comments`: dated comment entries
 
-### 5b: Detect status change
+#### 5b: Detect status change
 
 If local status differs from Jira status:
 
@@ -217,7 +225,7 @@ If local status differs from Jira status:
 
 If no matching transition, log warning and skip.
 
-### 5c: Detect description change
+#### 5c: Detect description change
 
 If local description differs meaningfully from Jira:
 
@@ -228,7 +236,7 @@ If local description differs meaningfully from Jira:
 
 Only push if local description has substantive content (not placeholder `-`).
 
-### 5d: Detect new comments
+#### 5d: Detect new comments
 
 Parse `### Comments` entries: `- YYYY-MM-DD — <comment text>`
 
@@ -239,7 +247,7 @@ Parse `### Comments` entries: `- YYYY-MM-DD — <comment text>`
    - Call `jira_add_issue_comment`
    - Log: `[PUSH] <KEY> comment posted`
 
-### 5e: Detect assignee change
+#### 5e: Detect assignee change
 
 If local assignee differs from Jira:
 
@@ -249,14 +257,14 @@ If local assignee differs from Jira:
 2. Call `jira_update_issue` with `fields: { assignee: { accountId: "<id>" } }`
 3. Log: `[PUSH] <KEY> assignee: <old> → <new>`
 
-### Push safety rules
+#### Push safety rules
 
 - **Never push** to tickets in `Closed` or `Done` status
 - **Never push** if local file has placeholder text
 - Only push genuine differences (no no-ops)
 - Confirm with user if >5 tickets affected
 
-## Step 6: Write ROADMAP.md
+### Step 6: Write ROADMAP.md
 
 Create/update `pillar/<pillar-code>/ROADMAP.md`:
 
@@ -276,7 +284,7 @@ Create/update `pillar/<pillar-code>/ROADMAP.md`:
 
 Preserve content below `## Notes` heading if exists.
 
-## Step 7: Create/update epic files
+### Step 7: Create/update epic files
 
 For each epic with Jira key:
 
@@ -284,7 +292,7 @@ For each epic with Jira key:
 2. Create/update `EPIC.md` (template below)
 3. Create/update child ticket files: `<TICKET_KEY>.md`
 
-### EPIC.md template
+#### EPIC.md template
 
 ```markdown
 # <EPIC_KEY>: <Epic Summary>
@@ -311,7 +319,7 @@ For each epic with Jira key:
 -
 ```
 
-### Child ticket template
+#### Child ticket template
 
 ```markdown
 # <TICKET_KEY>: <Summary>
@@ -336,13 +344,13 @@ For each epic with Jira key:
 -
 ```
 
-### Preserving user content
+#### Preserving user content
 
 - **NEVER** overwrite `## Plan` or `## Notes` sections
 - Only update `## Status` and regenerate `## Child tickets` table
 - Append Jira changes as `### Jira history` under Notes
 
-## Step 8: Report
+### Step 8: Report
 
 Output summary with two sections:
 
@@ -363,26 +371,26 @@ Output summary with two sections:
 
 ---
 
-# Operation 3: Status
+## Operation 3: Status
 
 Quick status update — sync Jira statuses and archive removed epics.
 
-## Op 3: Input Patterns
+### Op 3: Input Patterns
 
 - `pillar-status pho`
 - `update pho status`
 - `check pho pillar status`
 - `sync pho epics`
 
-## Op 3: Goal
+### Op 3: Goal
 
 Keep local workspace in sync with current Jira state and detect removed epics.
 
-## Op 3: Inputs Required
+### Op 3: Inputs Required
 
 **Pillar code** — e.g. `pho`
 
-## Op 3: Step 1: Load pillar config
+### Op 3: Step 1: Load pillar config
 
 Read `pillar/<pillar-code>/config.md` for:
 
@@ -392,13 +400,13 @@ Read `pillar/<pillar-code>/config.md` for:
 
 If config doesn't exist, tell user to run sync first.
 
-## Step 2: Discover known epics
+### Step 2: Discover known epics
 
 Scan `pillar/<pillar-code>/` for subdirectories containing `EPIC.md`. Extract epic key from directory name (e.g. `DSOSYS-2936`).
 
 Skip `_archived/` subdirectory.
 
-## Step 3: Fetch current Confluence state
+### Step 3: Fetch current Confluence state
 
 **Try MCP:**
 
@@ -414,7 +422,7 @@ Build two sets:
 - **Active epics**: keys on Confluence AND in local workspace
 - **Removed epics**: keys in local workspace but NOT on Confluence
 
-## Step 4: Archive removed epics
+### Step 4: Archive removed epics
 
 For each removed epic:
 
@@ -429,7 +437,7 @@ For each removed epic:
 
 4. Update `ROADMAP.md`: move epic row to `## Archived epics` section
 
-## Step 5: Update active epics from Jira
+### Step 5: Update active epics from Jira
 
 For each active epic:
 
@@ -446,13 +454,13 @@ For each active epic:
    - If new Jira comments since last sync, append to `### Jira history`
    - Never touch `## Plan` or user notes
 
-## Step 6: Update ROADMAP.md
+### Step 6: Update ROADMAP.md
 
 Regenerate epics table with latest statuses and update `Last synced` date.
 
 Preserve user-written content below `## Notes` heading.
 
-## Step 7: Report
+### Step 7: Report
 
 Output summary:
 
@@ -463,9 +471,9 @@ Output summary:
 
 ---
 
-# Error Handling
+## Error Handling
 
-## MCP Errors
+### MCP Errors
 
 **Confluence MCP:**
 
@@ -480,13 +488,13 @@ Output summary:
 - Ticket not found: Epic may have been deleted
 - Transition not found: Status name doesn't match available transitions
 
-## File System Errors
+### File System Errors
 
 - Config not found: Run init first (for sync/status)
 - Permission denied: Check file/folder permissions
 - Invalid pillar code: Use lowercase alphanumeric
 
-## Validation Errors
+### Validation Errors
 
 - Missing required inputs: Ask user for missing info
 - Invalid Confluence URL: Must contain `pageId=` parameter
@@ -494,13 +502,13 @@ Output summary:
 
 ---
 
-## Markdown quality rules
+### Markdown quality rules
 
 Apply the rules defined in the `markdownlint` skill for all files created or modified.
 
 ---
 
-# Integration Notes
+## Integration Notes
 
 This skill manages pillar workspaces independently. Other skills that may reference pillars:
 
