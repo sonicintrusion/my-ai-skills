@@ -211,14 +211,21 @@ When a service integration returns an auth error:
 ### Task D: GitHub Access Check
 
 Use the `gh` CLI to check the last commit on two repos. The GitHub MCP server
-is disabled by default, so do not wait for or authenticate it. Run lookups in
-series.
+is disabled by default, so do not wait for or authenticate it. Run each lookup
+as its own separate Bash call, in series. Do not wrap them in a shell loop
+(`for ...; do ...; done`): a loop needs a wildcard allow rule that approves any
+command, so a plain `gh api` call per repo is used instead.
 
 ```bash
-for repo in bis/cloud-docs data-platform/cloud-docs; do
-  gh api --hostname github.sie.sony.com "repos/$repo/commits?per_page=1" \
-    --jq '.[0] | "\(.sha[0:7]) by \(.commit.author.name) on \(.commit.author.date[0:10])"'
-done
+gh api --hostname github.sie.sony.com \
+  "repos/bis/cloud-docs/commits?per_page=1" \
+  --jq '.[0] | "\(.sha[0:7]) by \(.commit.author.name) on \(.commit.author.date[0:10])"'
+```
+
+```bash
+gh api --hostname github.sie.sony.com \
+  "repos/data-platform/cloud-docs/commits?per_page=1" \
+  --jq '.[0] | "\(.sha[0:7]) by \(.commit.author.name) on \(.commit.author.date[0:10])"'
 ```
 
 For each, record the most recent commit's short SHA, author, and date.
