@@ -196,11 +196,13 @@ When a service integration returns an auth error:
 
 1. Extract the auth URL from the error response and show it clearly to the user.
 2. If the runtime can safely open URLs, open it in the user's default browser.
-3. Wait about 30 seconds without prompting the user, so the login can complete.
-4. Retry the call automatically, once, without asking the user to confirm.
-5. **Retry succeeds** — record as `OK` and continue.
-6. **Retry fails** — stop retrying. Record `AUTH_FAILED: <service>`, report the
-   error, and **pause Step 3**. Ask whether to retry or skip that service. Do not
+3. Without prompting the user, retry the call every 5 seconds, for up to 6
+   attempts (about 30 seconds total). Wait between attempts with a short
+   background wait (for example, a `Monitor` until-loop), since foreground
+   `sleep` may be blocked.
+4. **An attempt succeeds** — stop polling, record as `OK`, and continue.
+5. **All 6 attempts fail** — record `AUTH_FAILED: <service>`, report the error,
+   and **pause Step 3**. Ask whether to retry or skip that service. Do not
    delegate work for that service. Proceed only after every service is `OK` or
    the user explicitly chooses a fallback or skip.
 
@@ -414,8 +416,8 @@ the user chose to continue, mark that step as `FAILED` in the summary.
 | Homebrew update fails | Record `FAILED: <error>` in summary |
 | Active AI client update deferred | Record `OK` and surface the package-specific follow-up command emitted by the script |
 | Split-tunnel fails | Report error, offer retry with `mobile` or `direct` mode |
-| Any integration auth error (Step 3) | Surface the auth URL, open it, wait ~30s, and retry automatically once |
-| Automatic retry still fails | Record `AUTH_FAILED: <service>`, pause Step 3, and ask the user to retry or skip |
+| Any integration auth error (Step 3) | Surface the auth URL, open it, and poll every 5s for up to 6 attempts (~30s) |
+| All 6 polling attempts fail | Record `AUTH_FAILED: <service>`, pause Step 3, and ask the user to retry or skip |
 | `gh` not authenticated | Ask the user to run `gh auth login --hostname github.sie.sony.com`, then retry once |
 | GitHub repo not found / access denied | Record as `FAILED: <error>` in summary |
 | Jira returns no results | Record as `OK: no issues found` — not a failure |
