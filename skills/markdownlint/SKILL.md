@@ -4,10 +4,11 @@ description: >-
   Enforce standard Markdown formatting rules compatible with markdownlint. Use
   when creating or editing .md files, when the user mentions markdownlint, or
   when the IDE shows MD### lint errors. Prefer tooling configs under e.g.
-  `config/markdownlint/` with `-c` (mdl/Docker), VS Code `extends`, and
-  explicit CLI `--config`. Validate with Docker (`markdownlint/markdownlint`,
-  bind-mount + `-w` + optional `-c`) when no local CLI is installed. Rules
-  source of truth: markdownlint RULES.md on GitHub (DavidAnson/markdownlint).
+  `config/markdownlint/` with `--config` (markdownlint-cli2), VS Code `extends`,
+  and explicit CLI `--config`. Validate with Docker
+  (`davidanson/markdownlint-cli2`, mount the repo root + `-w`) when no local
+  CLI is installed. Rules source of truth: markdownlint RULES.md on GitHub
+  (DavidAnson/markdownlint).
 ---
 
 # Markdownlint formatting
@@ -133,19 +134,21 @@ Skip rules that are excluded in the project's `style.rb` / `.markdownlint.json`.
 
 ## Running checks via Docker
 
-Use the official image **`markdownlint/markdownlint`**, which runs Ruby **`mdl`**. Bind-mount
-the documents (and config, if any) into the container and set the working directory so paths
-line up.
+Use the official image **`davidanson/markdownlint-cli2`**, which runs
+`markdownlint-cli2` (the same tool and rule set as the Node CLI). Mount the git
+repository root into the container so the project config is visible and paths
+match the repo.
 
-### Config resolution order
+### Config resolution
 
-Config is resolved in this priority order (highest first):
+Pass `--config` for the first config file that exists, in this order:
 
-1. **Local project config** — `config/markdownlint/.mdlrc` or `.mdlrc` at the repo root.
-2. **Global user config** — `~/.config/markdownlint/.mdlrc` (always mounted at `/global-mdl-config/`).
+1. **Local project config** — `config/markdownlint/.markdownlint.json`, then
+   `.markdownlint.json` at the repo root.
+2. **No config** — the default rule set applies (MD013 at 80 columns is on).
 
-Always mount the global config into every container run. Then pass `-c` pointing at the local
-config if one exists, or at `/global-mdl-config/.mdlrc` if it does not.
+The `~/.config/markdownlint/` folder holds the Ruby `mdl` config (`.mdlrc`,
+`style.rb`), which `markdownlint-cli2` does not read.
 
 ### Shell snippet (auto-detects local config)
 
@@ -153,56 +156,31 @@ Run from the **repository root**:
 
 ```shell
 # Detect local config (subfolder preferred, then repo root)
-if [ -f "config/markdownlint/.mdlrc" ]; then
-  MDL_CONFIG="-c config/markdownlint/.mdlrc"
-elif [ -f ".mdlrc" ]; then
-  MDL_CONFIG="-c .mdlrc"
+if [ -f "config/markdownlint/.markdownlint.json" ]; then
+  MDL_CONFIG="--config config/markdownlint/.markdownlint.json"
+elif [ -f ".markdownlint.json" ]; then
+  MDL_CONFIG="--config .markdownlint.json"
 else
-  MDL_CONFIG="-c /global-mdl-config/.mdlrc"
+  MDL_CONFIG=""
 fi
 
-docker run --rm -it \
-  -v "$PWD:/work:ro" \
-  -v "$HOME/.config/markdownlint:/global-mdl-config:ro" \
-  -w /work \
-  markdownlint/markdownlint \
-  $MDL_CONFIG .
+docker run --rm \
+  -v "$PWD:/workdir" \
+  -w /workdir \
+  davidanson/markdownlint-cli2:latest \
+  $MDL_CONFIG "**/*.md" "#node_modules"
 ```
 
-### Explicit forms
+To lint one file, pass its path relative to the repo root instead of
+`"**/*.md"`.
 
-No local config (fall back to global):
+- **`-v "$PWD:/workdir"`** — the repo root is mounted at `/workdir`.
+- **`-w /workdir`** — the container's working directory, so globs and config
+  paths resolve.
+- Arguments after the image name are globs for `markdownlint-cli2`. Exclude
+  `#node_modules` (or other folders) with a `#` prefix.
 
-```shell
-docker run --rm -it \
-  -v "$PWD:/work:ro" \
-  -v "$HOME/.config/markdownlint:/global-mdl-config:ro" \
-  -w /work \
-  markdownlint/markdownlint \
-  -c /global-mdl-config/.mdlrc .
-```
-
-With a local config in `config/markdownlint/`:
-
-```shell
-docker run --rm -it \
-  -v "$PWD:/work:ro" \
-  -v "$HOME/.config/markdownlint:/global-mdl-config:ro" \
-  -w /work \
-  markdownlint/markdownlint \
-  -c config/markdownlint/.mdlrc .
-```
-
-- **`-v "$PWD:/work:ro"`** — host repo at `/work` inside the container.
-- **`-v "$HOME/.config/markdownlint:/global-mdl-config:ro"`** — global config always available at `/global-mdl-config/`.
-- **`-w /work`** — `mdl` runs with that as cwd so `.` and relative paths resolve correctly.
-- Arguments after the image name are passed to `mdl`. Use `.` for the whole tree or pass specific files/dirs (e.g. `README.md skills/`).
-
-For scripts or CI without a TTY, omit **`-it`**.
-
-**Toolchains:** Ruby **`mdl`** (this image) uses **`.mdlrc`** + style `.rb` files. Node
-**`markdownlint-cli` / `markdownlint-cli2`** and VS Code's **`markdownlint`** extension use
-**`.markdownlint.json`** / **`.markdownlint.yaml`** — same MD rule IDs, different config format.
+For scripts or CI without a TTY, no extra flags are needed; `--rm` is enough.
 
 ## Config layout (subfolder)
 
